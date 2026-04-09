@@ -1,0 +1,83 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+
+datasource db {
+    provider = "postgresql"
+}
+
+
+model Template {
+    id        String    @id @default(ulid())
+    name      String    @unique
+    content   Json
+
+    creator   Staff     @relation("CreatedTemplates", fields: [createdBy], references: [id])
+    createdBy String
+
+    updater   Staff     @relation("UpdatedTemplates", fields: [updatedBy], references: [id])
+    updatedBy String
+
+    sendEmails SendEmailLog[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+
+model Student {
+    id          String      @id @default(ulid())
+    name        String
+    email       String      @unique
+
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+}
+
+
+model Image {
+    id          String      @id @default(ulid())
+    name        String
+    url         String
+
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+}
+
+
+enum Role {
+    ADMIN
+    USER
+    VIEWER
+}
+
+
+model Staff {
+    id    String @id @default(ulid())
+    name  String
+    email String @unique
+    role  Role
+
+    createdTemplates Template[]  @relation("CreatedTemplates")
+    updatedTemplates Template[]  @relation("UpdatedTemplates")
+    sentEmails       SendEmailLog[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+
+model SendEmailLog {
+    id         String   @id @default(ulid())
+
+    template   Template @relation(fields: [templateId], references: [id])
+    templateId String
+
+    sender     Staff    @relation(fields: [staffId], references: [id])
+    staffId    String
+
+    studentEmails String[]
+
+    createdAt DateTime @default(now())
+}
