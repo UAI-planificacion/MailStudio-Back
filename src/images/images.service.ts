@@ -2,7 +2,6 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService }      from '@prisma/prisma.service';
 import { PrismaException }    from '@prisma/prisma-catch';
-import { CreateImageDto }     from '@images/dto/create-image.dto';
 import { UpdateImageDto }     from '@images/dto/update-image.dto';
 import { FileManagerService } from '@services/file-manager.service';
 
@@ -16,14 +15,15 @@ export class ImagesService {
 	) { }
 
 
-	async create( createImageDto : CreateImageDto, file : Express.Multer.File ) {
+	async create( name : string, file : Express.Multer.File ) {
 		try {
-			const imageUrl = await this.fileManagerService.upload( file );
+			const baseUrl   = await this.fileManagerService.upload( file );
+            const url       = baseUrl.split( '/' ).at( -1 ) as string;
 
 			return await this.prisma.image.create({
 				data : {
-					name : createImageDto.name,
-					url  : imageUrl,
+					name : name,
+					url,
 				},
 			});
 		} catch ( error ) {
