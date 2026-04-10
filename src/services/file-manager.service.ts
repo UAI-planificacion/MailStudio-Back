@@ -1,11 +1,19 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 
-import { ENVS }          from '@config/envs';
-import { METHOD }        from '@services/http-codes';
-import connectRequest    from '@services/fetch.service';
+import
+connectRequest, {
+    isApiError
+}                   from '@services/fetch.service';
+import { ENVS }     from '@config/envs';
+import { METHOD }   from '@services/http-codes';
 
 
-@Injectable ( )
+interface RespondeFileManager {
+    result : string;
+}
+
+
+@Injectable()
 export class FileManagerService {
 
     private readonly baseUrl = ENVS.FILE_MANAGER_URL;
@@ -19,8 +27,9 @@ export class FileManagerService {
 
         try {
             const formData = new FormData();
-            const blob     = new Blob ([ new Uint8Array ( file.buffer ) ], { type : file.mimetype });
-            const endpoint = `${ this.baseUrl }/upload/${ encodeURIComponent ( this.folder ) }?format=avif`;
+            const blob     = new Blob([ new Uint8Array( file.buffer ) ], { type : file.mimetype });
+            //TODO: Agregar los parametros de formato y calidad en el .env
+            const endpoint = `${ this.baseUrl }/upload/${ encodeURIComponent( this.folder ) }?format=avif&quality=50`;
 
             formData.append( 'file', blob, file.originalname );
 
@@ -30,28 +39,36 @@ export class FileManagerService {
                 body   : formData as any,
             });
 
-            return( response as any ).secure_url;
+            return ( response as any ).secure_url as string;
         } catch ( error ) {
-            throw new BadRequestException( `Error en el servicio de archivos : ${ error.message || error }` );
+            throw new BadRequestException( `Error en el servicio de archivos` );
         }
     }
 
 
     async delete( imageUrl : string ) : Promise<void> {
         try {
-            const urlParts   = imageUrl.split ( '/' );
-            const lastPart   = urlParts[ urlParts.length - 1 ];
-            const fileName   = lastPart.split ( '.' )[ 0 ];
-            const deletePath = `${ this.folder }|${ fileName }`;
+            const deletePath    = `${ this.folder }|${ imageUrl.split ( '.' )[0] }`;
+            const endpoint      = `${ this.baseUrl }/delete/${ deletePath }`;
 
-            const endpoint = `${ this.baseUrl }/delete/${ encodeURIComponent ( deletePath ) }`;
-
-            await connectRequest({
+            const response = await connectRequest<RespondeFileManager>({
                 endpoint,
                 method : METHOD.DELETE,
             });
+
+            if ( !response ) {
+                throw new BadRequestException( 'Error al eliminar archivo' );
+            }
+
+            if ( isApiError( response )) {
+                throw new BadRequestException( 'Error al eliminar archivo' );
+            }
+
+            if ( response.result !== 'ok' )  {
+                throw new BadRequestException( 'Error al eliminar archivo' );
+            }
         } catch ( error ) {
-            console.error( `Error al intentar eliminar archivo : ${ error.message || error }` );
+            throw new BadRequestException( `Error al eliminar archivo` );
         }
     }
 
