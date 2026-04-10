@@ -29,7 +29,7 @@ export default async function connectRequest<T> ( {
     const url           = isFullUrl ? endpoint : `/api/${ endpoint }`;
     const isFormData    = body instanceof FormData;
 
-    const response = await fetch ( url, {
+    const response = await fetch( url, {
         method,
         body    : isFormData ? ( body as any ) : ( body ? JSON.stringify ( body ) : undefined ),
         cache   : 'no-cache',
@@ -38,7 +38,7 @@ export default async function connectRequest<T> ( {
             'Accept' : 'application/json',
             ...headers,
         }
-    } );
+    });
 
     if ( !response.ok ) {
         const errorData = await response.json().catch( () => ({}) );
