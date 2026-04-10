@@ -1,21 +1,31 @@
-import { IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
+import {
+    IsNotEmpty,
+    IsObject,
+    IsOptional,
+    IsString,
+    Length
+}               from 'class-validator';
+
 
 export class CreateTemplateDto {
 
 	@IsString()
 	@IsNotEmpty()
-	name		: string;
+    @Length( 3, 50 )
+	name: string;
 
 	@IsObject()
 	@IsNotEmpty()
-	content		: Record<string, any>;
+	content: Record<string, any>;
 
 	@IsString()
 	@IsNotEmpty()
-	createdBy	: string;
+    @Length( 26, 26 )
+	createdBy: string;
 
 	@IsString()
 	@IsOptional()
-	updatedBy?	: string;
+    @Length( 26, 26 )
+	updatedBy?: string;
 
 }
