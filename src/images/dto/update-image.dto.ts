@@ -1,6 +1,15 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { 
+    IsOptional, 
+    IsString, 
+    Length 
+}               from 'class-validator';
 
-import { CreateImageDto } from '@images/dto/create-image.dto';
 
+export class UpdateImageDto {
 
-export class UpdateImageDto extends PartialType( CreateImageDto ) {}
+    @IsString()
+    @IsOptional()
+    @Length( 1, 50 )
+    name : string;
+
+}
