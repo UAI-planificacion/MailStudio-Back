@@ -18,9 +18,11 @@ export class TemplatesController {
 	}
 
 
-    @Get()
-	findAll() {
-		return this.templatesService.findAll();
+    @Get( '/staff/:id' )
+	findAll(
+        @Param( 'id' ) id: string
+    ) {
+		return this.templatesService.findAll( id );
 	}
 
 
