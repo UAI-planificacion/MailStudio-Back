@@ -26,12 +26,33 @@ export class TemplatesService {
 	}
 
 
-	async findAll( ) {
+	async findAll( staffId : string ) {
+        // *TODO: tenemos que hacer algo con el staffId
+
 		return await this.prisma.template.findMany({
-			include : {
-				creator : true,
-				updater : true,
-			},
+            select : {
+                id          : true,
+                name        : true,
+                content     : true,
+                updatedAt   : true,
+                createdAt   : true,
+                creator     : {
+                    select: {
+                        id      : true,
+                        name    : true,
+                        email   : true,
+                        role    : true,
+                    }
+                },
+                updater: {
+                    select : {
+                        id      : true,
+                        name    : true,
+                        email   : true,
+                        role    : true,
+                    }
+                },
+            }
 		});
 	}
 
