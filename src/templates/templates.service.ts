@@ -1,9 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { PrismaService }     from '@prisma/prisma.service';
-import { PrismaException }   from '@prisma/prisma-catch';
-import { CreateTemplateDto } from '@templates/dto/create-template.dto';
-import { UpdateTemplateDto } from '@templates/dto/update-template.dto';
+import {
+    ERROR_MESSAGES,
+    PrismaException
+}                               from '@prisma/prisma-catch';
+import { PrismaService }        from '@prisma/prisma.service';
+import { CreateTemplateDto }    from '@templates/dto/create-template.dto';
+import { UpdateTemplateDto }    from '@templates/dto/update-template.dto';
 
 
 @Injectable( )
@@ -52,6 +55,12 @@ export class TemplatesService {
                         role    : true,
                     }
                 },
+            },
+            where : {
+                active: true
+            },
+            orderBy : {
+                updatedAt: 'desc'
             }
 		});
 	}
@@ -59,7 +68,7 @@ export class TemplatesService {
 
 	async findOne( id : string ) {
 		const template = await this.prisma.template.findUnique({
-			where   : { id },
+			where   : { id, active : true },
 			include : {
 				creator : true,
 				updater : true,
@@ -92,6 +101,16 @@ export class TemplatesService {
 				where : { id },
 			});
 		} catch ( error ) {
+            if ( error.code === ERROR_MESSAGES.NOT_FOUND ) {
+                const template = await this.findOne( id );
+
+                if ( !template.active ) {
+                    throw new NotFoundException ( `Template with id ${ id } not found` );
+                }
+
+                return await this.update( id, { active: false });
+            }
+
 			throw PrismaException.catch( error );
 		}
 	}
