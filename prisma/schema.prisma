@@ -19,6 +19,8 @@ model Template {
     updater   Staff     @relation("UpdatedTemplates", fields: [updatedBy], references: [id])
     updatedBy String
 
+    active    Boolean   @default(true)
+
     sendEmails SendEmailLog[]
 
     createdAt DateTime @default(now())
