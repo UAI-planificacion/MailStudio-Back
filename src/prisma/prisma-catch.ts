@@ -56,7 +56,7 @@ export class PrismaException {
         }
 
         if ( exception.code === ERROR_MESSAGES.NOT_FOUND ) {
-            const id = ( exception.message as string ).split(':')[2].split('_')[0].replace(' `', '');
+            const id = 'Record is in use and cannot be deleted.';
             this.#logger.error( `${message ?? id} not found.`);
             throw new NotFoundException( `${ message ?? id} not found.` );
         }
