@@ -1,0 +1,92 @@
+export const dayModules = [
+	{
+		id       : 1,
+		dayId    : 1,
+		moduleId : 1,
+		order    : 1,
+	},
+	{
+		id       : 2,
+		dayId    : 1,
+		moduleId : 2,
+		order    : 2,
+	},
+	{
+		id       : 3,
+		dayId    : 1,
+		moduleId : 3,
+		order    : 3,
+	},
+	{
+		id       : 4,
+		dayId    : 2,
+		moduleId : 1,
+		order    : 1,
+	},
+	{
+		id       : 5,
+		dayId    : 2,
+		moduleId : 2,
+		order    : 2,
+	},
+	{
+		id       : 6,
+		dayId    : 3,
+		moduleId : 1,
+		order    : 1,
+	},
+	{
+		id       : 7,
+		dayId    : 4,
+		moduleId : 1,
+		order    : 1,
+	},
+	{
+		id       : 8,
+		dayId    : 5,
+		moduleId : 1,
+		order    : 1,
+	},
+	{
+		id       : 9,
+		dayId    : 2,
+		moduleId : 3,
+		order    : 3,
+	},
+	{
+		id       : 10,
+		dayId    : 3,
+		moduleId : 2,
+		order    : 2,
+	},
+	{
+		id       : 11,
+		dayId    : 4,
+		moduleId : 2,
+		order    : 2,
+	},
+	{
+		id       : 12,
+		dayId    : 5,
+		moduleId : 2,
+		order    : 2,
+	},
+	{
+		id       : 13,
+		dayId    : 1,
+		moduleId : 4,
+		order    : 4,
+	},
+	{
+		id       : 14,
+		dayId    : 2,
+		moduleId : 4,
+		order    : 4,
+	},
+	{
+		id       : 15,
+		dayId    : 3,
+		moduleId : 3,
+		order    : 3,
+	},
+];
