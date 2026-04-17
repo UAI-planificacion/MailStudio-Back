@@ -28,6 +28,7 @@
             "@templates/*"      : ["./src/templates/*"],
             "@services/*"       : ["./src/services/*"],
             "@prisma/*"         : ["./src/prisma/*"],
+            "@data/*"           : ["./src/data/*"],
             "@app/*"            : ["./src/*"],
         }
     }
