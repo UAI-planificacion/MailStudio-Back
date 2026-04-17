@@ -29,6 +29,7 @@
             "@services/*"       : ["./src/services/*"],
             "@prisma/*"         : ["./src/prisma/*"],
             "@data/*"           : ["./src/data/*"],
+            "@seed/*"           : ["./src/seed/*"],
             "@app/*"            : ["./src/*"],
         }
     }
