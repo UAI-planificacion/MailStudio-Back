@@ -7,6 +7,8 @@ import { ImagesModule }     from '@images/images.module';
 import { TemplatesModule }  from '@templates/templates.module';
 import { StudentsModule }   from '@students/students.module';
 import { SendEmailsModule } from '@send-emails/send-emails.module';
+import { SeedModule }       from '@seed/seed.module';
+import { DataModule }       from '@data/data.module';
 
 
 @Module({
@@ -16,7 +18,9 @@ import { SendEmailsModule } from '@send-emails/send-emails.module';
         ImagesModule, 
         TemplatesModule, 
         StudentsModule, 
-        SendEmailsModule 
+        SendEmailsModule,
+        SeedModule,
+        DataModule 
     ],
     controllers : [ AppController ],
 })
