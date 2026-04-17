@@ -28,16 +28,6 @@ model Template {
 }
 
 
-model Student {
-    id          String      @id @default(ulid())
-    name        String
-    email       String      @unique
-
-    createdAt   DateTime    @default(now())
-    updatedAt   DateTime    @updatedAt
-}
-
-
 model Image {
     id          String      @id @default(ulid())
     name        String
@@ -82,4 +72,414 @@ model SendEmailLog {
     studentEmails String[]
 
     createdAt DateTime @default(now())
+}
+
+// --------------------------------------
+// ENUMS
+// --------------------------------------
+
+enum StudentStatus {
+    ACTIVE
+    SUSPENDED
+    INACTIVE
+    GRADUATED
+}
+
+
+enum SessionName {
+    LECTURE
+    WORKSHOP
+    TUTORING
+    LABORATORY
+}
+
+
+enum SpaceType {
+    ROOM
+    STUDY_ROOM
+    MEETING_ROOM
+    POSTGRADUATE_ROOM
+    AUDITORIO
+    LAB
+    LABPC
+    DIS
+    CORE
+    MULTIPURPOSE
+}
+
+// --------------------------------------
+// INFRAESTRUCTURA & GEOGRAFÍA
+// --------------------------------------
+
+model City {
+    id        String   @id @default(ulid())
+    name      String   // Ej: "Santiago", "Viña del Mar"
+
+    regionId  String
+    region    Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+    // Un estudiante vive en una ciudad específica
+    students  Student[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([name, regionId]) // Evita ciudades duplicadas en la misma región
+}
+
+model Region {
+    id        String   @id @default(ulid())
+    name      String   @unique // Ej: "Metropolitana", "Valparaíso"
+
+    // Relaciones
+    cities    City[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+
+model Building {
+    id          String    @id @default(ulid())
+    name        String    // Ej: Edificio A, Edificio C
+    headquarter Headquarters
+
+    careers  Career[]  
+    sections Section[]
+}
+
+
+model Size {
+    id          SizeValue @id
+    detail      String
+    min         Int?
+    max         Int?
+    lessThan    Int?
+    greaterThan Int?
+
+    sections Section[]
+    subjects Subject[]
+}
+
+
+enum SizeValue {
+    XS
+    XE
+    S
+    SE
+    MS
+    M
+    L
+    XL
+    XXL
+}
+
+// --------------------------------------
+// ACADÉMICO
+// --------------------------------------
+
+model Career {
+    id          String      @id @default(ulid())
+    name        String      @unique
+
+    // Relación con Facultad: Derecho, Ingeniería, etc.
+    facultyId   String
+    faculty     Faculty     @relation(fields: [facultyId], references: [id])
+
+    buildingId  String
+    building    Building    @relation(fields: [buildingId], references: [id])
+
+    plans       StudyPlan[]
+}
+
+
+model StudyPlan {
+    id        String    @id @default(ulid())
+    code      String    @unique // Ej: "PLAN-DER-2024"
+    careerId  String
+    career    Career    @relation(fields: [careerId], references: [id])
+
+    // Un plan tiene muchas asignaturas y una asignatura puede estar en muchos planes
+    subjects  Subject[] @relation("StudyPlanSubjects")
+    students  Student[]
+}
+
+
+enum Headquarters {
+    ERRAZURIZ
+    PENALOLEN
+    VINADELMAR
+    VITACURA   
+}
+
+
+model Grade {
+    id              String @id @default(ulid())
+    name            String @unique
+    headquartersId  Headquarters? @default(ERRAZURIZ)
+
+    subjects        Subject[]
+
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+
+    @@index([name])
+}
+
+
+model Faculty {
+    id          String    @id @default(ulid())
+    name        String    @unique
+    description String?
+    isActive    Boolean   @default(true)
+
+    // Una facultad administra muchas carreras y muchas asignaturas
+    careers     Career[]
+    subjects    Subject[]
+
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+
+    @@index([name])
+}
+
+
+model Subject {
+    id              String    @id
+    name            String    @unique
+    isActive        Boolean   @default(true)
+    spaceType       SpaceType?
+    quota           Int?      @default(0)
+
+    // Quién dicta la materia
+    facultyId       String
+    faculty         Faculty   @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+
+    // En qué planes está esta materia (Relación M:N)
+    studyPlans      StudyPlan[] @relation("StudyPlanSubjects")
+
+    spaceSizeId     SizeValue?
+    spaceSize       Size?       @relation(fields: [spaceSizeId], references: [id])
+
+    gradeId         String?
+    grade           Grade?      @relation(fields: [gradeId], references: [id])
+
+    // Tipos de horas
+    workshop        Int @default(0)
+    lecture         Int @default(0)
+    tutoringSession Int @default(0)
+    laboratory      Int @default(0)
+
+    sections        Section[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([name, facultyId])
+}
+
+model Period {
+    id       String    @id @default(ulid())
+    name     String    // Ej: "2026-01"
+
+    sections Section[]
+}
+
+// --------------------------------------
+// ESTUDIANTE
+// --------------------------------------
+
+model Student {
+    id          String          @id @default(ulid())
+    name        String
+    email       String          @unique
+    status      StudentStatus   @default(ACTIVE)
+    cohort      String        // Ej: "2023"
+    birthDate   DateTime
+    rut         String
+
+    // Ubicación
+    cityId      String
+    city        City  @relation(fields: [cityId], references: [id])
+    headquarter Headquarters
+
+    // Académico
+    studyPlanId  String
+    studyPlan    StudyPlan     @relation(fields: [studyPlanId], references: [id])
+
+    // Inscripciones
+    sections     Section[]     @relation("StudentSections")
+
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
+}
+
+// --------------------------------------
+// PLANIFICACIÓN & HORARIOS
+// --------------------------------------
+
+model Section {
+    id              String      @id @default(ulid())
+    code            Int
+    isClosed        Boolean     @default(false)
+    groupId         String
+    startDate       DateTime
+    endDate         DateTime
+
+    spaceType       SpaceType?
+    buildingId      String?
+    building        Building?   @relation(fields: [buildingId], references: [id])
+
+    quota           Int
+    registered      Int?        @default(0)
+
+    // Relaciones principales
+    periodId        String
+    period          Period      @relation(fields: [periodId], references: [id], onDelete: Cascade)
+
+    subjectId       String
+    subject         Subject     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+    professorId     String?
+    professor       Professor?  @relation(fields: [professorId], references: [id])
+
+    spaceSizeId     SizeValue?
+    spaceSize       Size?       @relation(fields: [spaceSizeId], references: [id])
+
+    // Tipo de horas
+    workshop        Int         @default(0)
+    lecture         Int         @default(0)
+    tutoringSession Int         @default(0)
+    laboratory      Int         @default(0)
+
+    // Relaciones dinámicas
+    students        Student[]   @relation("StudentSections")
+    sessions        Session[]
+
+    // Otros (Placeholders según tu modelo)
+    requestId       String?     @unique
+    planningChangeId String?    @unique
+
+    createdAt       DateTime    @default(now())
+    updatedAt       DateTime    @updatedAt
+}
+
+
+model Session {
+    id              String      @id @default(ulid())
+    name            SessionName
+    spaceId         String?     // ID de la sala o espacio físico
+    chairsAvailable Int?
+    isEnglish       Boolean     @default(false)
+    date            DateTime
+
+    sectionId       String
+    section         Section     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+    professorId     String?
+    professor       Professor?  @relation(fields: [professorId], references: [id])
+
+    dayModuleId     Int
+    dayModule       DayModule   @relation(fields: [dayModuleId], references: [id])
+
+    startTime       DateTime?   // Para filtros de rango horario exacto
+    endTime         DateTime?
+}
+
+// --------------------------------------
+// MODELOS COMPLEMENTARIOS
+// --------------------------------------
+
+model Professor {
+    id        String    @id @default(ulid())
+    name      String
+    email     String    @unique
+
+    sections  Section[]
+    sessions  Session[]
+}
+
+
+enum DayName {
+    Lunes
+    Martes
+    Miercoles
+    Jueves
+    Viernes
+    Sabado
+    Domingo
+}
+
+
+model Day {
+    id          Int @id @default(autoincrement())
+    name        DayName @unique
+    shortName   String?
+    mediumName  String?
+
+    dayModules DayModule[]
+
+    @@index([name])
+}
+
+
+enum ModuleDifference {
+    A
+    B
+    C
+    D
+    E
+    F
+    G
+    H
+    I
+    J
+    K
+    L
+    M
+    N
+    O
+    P
+    Q
+    R
+    S
+    T
+    U
+    V
+    W
+    X
+    Y
+    Z
+}
+
+
+model Module {
+    id          Int @id @default(autoincrement())
+    code        String?
+    difference  ModuleDifference?
+    startHour   String
+    endHour     String
+    isActive    Boolean @default(true)
+
+    dayModules  DayModule[]
+
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([code])
+}
+
+
+model DayModule {
+    id                  Int @id @default(autoincrement())
+    dayId               Int
+    moduleId            Int
+    order               Int @default(0)
+
+    day                 Day    @relation(fields: [dayId], references: [id])
+    module              Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+    sessions            Session[]
+
+    @@unique([dayId, moduleId])
 }
