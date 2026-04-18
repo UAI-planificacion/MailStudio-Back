@@ -17,11 +17,11 @@ export class SearchStudentDto {
     // @IsString({ each: true })
     // names?: string[];
 
-    @IsOptional()
-    @Transform(({ value }) => (Array.isArray(value) ? value : value.split(',')))
-    @IsArray()
-    @IsString({ each: true })
-    emails?: string[];
+    // @IsOptional()
+    // @Transform(({ value }) => (Array.isArray(value) ? value : value.split(',')))
+    // @IsArray()
+    // @IsString({ each: true })
+    // emails?: string[];
 
     @IsOptional()
     @Transform(({ value }) => (Array.isArray(value) ? value : value.split(',')))
@@ -90,7 +90,7 @@ export class SearchStudentDto {
     @Transform(({ value }) => (Array.isArray(value) ? value : value.split(',')))
     @IsArray()
     @IsString({ each: true })
-    buildingIds?: string[];
+    buildingNames?: string[];
 
     @IsOptional()
     @Transform(({ value }) => (Array.isArray(value) ? value : value.split(',')))
