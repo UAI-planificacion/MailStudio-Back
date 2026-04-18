@@ -12,10 +12,11 @@ export class StudentsService {
 
 	async findStudents( filters : SearchStudentDto ) {
 		const {
-			emails, status, cohorts,
+			// emails,
+            status, cohorts,
 			regionIds, sedeIds, cityIds,
 			facultyIds, careerIds, studyPlanIds,
-			periodIds, subjectIds, buildingIds, professorIds,
+			periodIds, subjectIds, buildingNames, professorIds,
 			spaceIds, dayIds, dayModuleIds,
 			startTime, endTime,
 		} = filters;
@@ -23,9 +24,9 @@ export class StudentsService {
 		const where : Prisma.StudentWhereInput = {};
 
 		// 1. Filtros Directos
-		if ( emails ) {
-			where.email = { in : emails };
-		}
+		// if ( emails ) {
+		// 	where.email = { in : emails };
+		// }
 
         if ( status ) {
 			where.status = { in : status };
@@ -66,16 +67,16 @@ export class StudentsService {
 		}
 
 		// 3. Filtros de Sección y Sesión
-		if ( periodIds || subjectIds || buildingIds || professorIds || spaceIds || dayIds || dayModuleIds || ( startTime && endTime ) ) {
+		if ( periodIds || subjectIds || buildingNames || professorIds || spaceIds || dayIds || dayModuleIds || ( startTime && endTime ) ) {
 			where.sections = {
 				some : {
-					...( periodIds && { periodId : { in : periodIds } }),
-					...( subjectIds && { subjectId : { in : subjectIds } }),
-					...( buildingIds && { buildingId : { in : buildingIds } }),
-					...( professorIds && { professorId : { in : professorIds } }),
+					...( periodIds     && { periodId    : { in : periodIds } } ),
+					...( subjectIds    && { subjectId   : { in : subjectIds } } ),
+					...( buildingNames && { building    : { name : { in : buildingNames } } } ),
+					...( professorIds  && { professorId : { in : professorIds } } ),
 
 					// Filtros de Sesión profunda
-					...( ( spaceIds || dayIds || dayModuleIds || ( startTime && endTime ) ) && {
+					...( ( spaceIds || dayIds || dayModuleIds || ( startTime && endTime )) && {
 						sessions : {
 							some : {
 								...( spaceIds && { spaceId : { in : spaceIds } }),
@@ -101,4 +102,35 @@ export class StudentsService {
 			where,
 		});
 	}
+
+
+    async getEmails() : Promise<string[]> {
+		const students = await this.prisma.student.findMany({
+			distinct : [ 'email' ],
+			select   : { email : true },
+		});
+
+		return students.map(( s ) => s.email );
+	}
+
+
+    async getStatuses() : Promise<string[]> {
+		const result = await this.prisma.student.findMany({
+			distinct : [ 'status' ],
+			select   : { status : true },
+		});
+
+		return result.map(( s ) => s.status );
+	}
+
+
+    async getCohorts() : Promise<string[]> {
+		const result = await this.prisma.student.findMany({
+			distinct : [ 'cohort' ],
+			select   : { cohort : true },
+		});
+
+		return result.map(( s ) => s.cohort );
+	}
 }
+
