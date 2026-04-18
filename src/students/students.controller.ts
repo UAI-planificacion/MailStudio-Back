@@ -3,9 +3,6 @@ import {
     Get,
     Post,
     Body,
-    Patch,
-    Param,
-    Delete,
     HttpCode
 } from '@nestjs/common';
 
@@ -19,7 +16,8 @@ export class StudentsController {
         private readonly studentsService : StudentsService
     ) {}
 
-	@Post( 'search' )
+
+    @Post( 'search' )
 	@HttpCode( 200 )
 	search(
         @Body() filters : SearchStudentDto
@@ -27,28 +25,21 @@ export class StudentsController {
 		return this.studentsService.findStudents( filters );
 	}
 
-	// @Post()
-    // create(@Body() createStudentDto: CreateStudentDto) {
-    //     return this.studentsService.create(createStudentDto);
-    // }
 
-    // @Get()
-    // findAll() {
-    //     return this.studentsService.findAll();
-    // }
+    @Get( 'emails' )
+	getEmails() {
+		return this.studentsService.getEmails();
+	}
 
-    // @Get(':id')
-    // findOne(@Param('id') id: string) {
-    //     return this.studentsService.findOne(+id);
-    // }
 
-    // @Patch(':id')
-    // update(@Param('id') id: string, @Body() updateStudentDto: UpdateStudentDto) {
-    //     return this.studentsService.update(+id, updateStudentDto);
-    // }
+    @Get( 'statuses' )
+	getStatuses() {
+		return this.studentsService.getStatuses();
+	}
 
-    // @Delete(':id')
-    // remove(@Param('id') id: string) {
-    //     return this.studentsService.remove(+id);
-    // }
+
+    @Get( 'cohorts' )
+	getCohorts() {
+		return this.studentsService.getCohorts();
+	}
 }
