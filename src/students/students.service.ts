@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
 
-import { Prisma, Headquarters } from '@prisma/client';
+import { Prisma, Headquarters, StudentStatus } from '@prisma/client';
 
 import { PrismaService }    from '@prisma/prisma.service';
 import { SearchStudentDto } from '@students/dto/search-student.dto';
-
 
 @Injectable()
 export class StudentsService {
@@ -98,9 +97,52 @@ export class StudentsService {
 			};
 		}
 
-		return this.prisma.student.findMany({
+		const students = await this.prisma.student.findMany({
 			where,
+			select : {
+                id: true,
+                studyPlanId: true,
+                cityId: true,
+                name: true,
+                email: true,
+                status: true,
+                cohort: true,
+                birthDate: true,
+                rut: true,
+                headquarter: true,
+				city      : {
+                    select : {
+                        regionId : true
+                    }
+                },
+				studyPlan : {
+					select : {
+						careerId : true,
+						career   : { select : { facultyId : true } },
+					},
+				},
+				sections : {
+					select : {
+						id        : true,
+						periodId  : true,
+						building  : { select : { name : true } },
+						subject   : { select : { id: true, gradeId : true } },
+					},
+				},
+			},
 		});
+
+		return students.map(( student ) => ({
+            ...student,
+			regionId      : student.city.regionId,
+			facultyId     : student.studyPlan.career.facultyId,
+			careerId      : student.studyPlan.careerId,
+			buildingNames : [ ...new Set( student.sections.map(( sec ) => sec.building?.name ).filter( Boolean ) ) ],
+			gradeIds      : [ ...new Set( student.sections.map(( sec ) => sec.subject.gradeId ).filter( Boolean ) ) ],
+			periodIds     : [ ...new Set( student.sections.map(( sec ) => sec.periodId ) ) ],
+			subjectIds    : [ ...new Set( student.sections.map(( sec ) => sec.subject.id ) ) ],
+			sectionIds    : [ ...new Set( student.sections.map(( sec ) => sec.id ) ) ],
+		}));
 	}
 
 
@@ -114,13 +156,18 @@ export class StudentsService {
 	}
 
 
-    async getStatuses() : Promise<string[]> {
-		const result = await this.prisma.student.findMany({
-			distinct : [ 'status' ],
-			select   : { status : true },
-		});
+    async getStatuses() : Promise<{ value : StudentStatus, label : string }[]> {
+		const translations : Record<StudentStatus, string> = {
+			[ StudentStatus.ACTIVE ]    : 'Activo',
+			[ StudentStatus.SUSPENDED ] : 'Suspendido',
+			[ StudentStatus.INACTIVE ]  : 'Inactivo',
+			[ StudentStatus.GRADUATED ] : 'Graduado',
+		};
 
-		return result.map(( s ) => s.status );
+		return Object.values( StudentStatus ).map(( status ) => ({
+			value : status,
+			label : translations[ status ],
+		}));
 	}
 
 
