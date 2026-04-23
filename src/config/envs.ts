@@ -22,6 +22,8 @@ interface EnvVars {
 
     AZURE_BUS_CONNECTION    : string;
     AZURE_QUEUE_NAME        : string;
+    AZURE_QUEUE_RECURRENT_NAME        : string;
+
 }
 
 const envsSchema = joi.object({
@@ -44,6 +46,8 @@ const envsSchema = joi.object({
 
     AZURE_BUS_CONNECTION    : joi.string().required(),
     AZURE_QUEUE_NAME        : joi.string().required(),
+    AZURE_QUEUE_RECURRENT_NAME        : joi.string().required(),
+
 })
 .unknown( true );
 
@@ -74,5 +78,6 @@ export const ENVS = {
     AZURE_BUS : {
         CONNECTION  : envVars.AZURE_BUS_CONNECTION,
         QUEUE_NAME  : envVars.AZURE_QUEUE_NAME,
+        QUEUE_RECURRENT_NAME : envVars.AZURE_QUEUE_RECURRENT_NAME,
     },
 }
