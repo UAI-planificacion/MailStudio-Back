@@ -1,34 +1,60 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { SendEmailsService } from './send-emails.service';
-import { CreateSendEmailDto } from './dto/create-send-email.dto';
-import { UpdateSendEmailDto } from './dto/update-send-email.dto';
+import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
 
-@Controller('send-emails')
+import {
+    SendEmailDto,
+    SendEmailScheduleDto
+}                               from '@send-emails/dto/send-email.dto';
+import { SendEmailsService }    from '@send-emails/send-emails.service';
+import { PayloadEmail }         from '@send-emails/models/payloadEmail.model';
+
+
+@Controller( 'mail-sender' )
 export class SendEmailsController {
-  constructor(private readonly sendEmailsService: SendEmailsService) {}
 
-  @Post()
-  create(@Body() createSendEmailDto: CreateSendEmailDto) {
-    return this.sendEmailsService.create(createSendEmailDto);
-  }
+    constructor(
+        private readonly sendEmailsService: SendEmailsService
+    ) {}
 
-  @Get()
-  findAll() {
-    return this.sendEmailsService.findAll();
-  }
+    @Post( 'massive' )
+    async sendMassive(
+        @Body() payload: SendEmailDto
+    ) {
+        const messages = payload.emails.map(email => ({
+            email       : email,
+            template    : payload.template
+        }));
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.sendEmailsService.findOne(+id);
-  }
+        await this.sendEmailsService.sendMassiveEmails( messages );
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSendEmailDto: UpdateSendEmailDto) {
-    return this.sendEmailsService.update(+id, updateSendEmailDto);
-  }
+        return {
+            status  : 'Encolado exitosamente',
+            count   : messages.length
+        };
+    }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.sendEmailsService.remove(+id);
-  }
+
+    @Post('schedule')
+    async scheduleCampaign(
+        @Body() payload: SendEmailScheduleDto
+    ) {
+        const scheduledDate = new Date( payload.sendAt );
+
+        if ( scheduledDate <= new Date() ) {
+            throw new BadRequestException( 'La fecha de programación debe ser futura.' );
+        }
+
+        const messages: PayloadEmail[] = payload.emails.map( email => ({
+            email       : email,
+            template    : payload.template
+        }));
+
+        await this.sendEmailsService.sendScheduledEmails( messages, scheduledDate );
+
+        return {
+            status          : 'Campaña programada exitosamente',
+            totalEmails     : messages.length,
+            scheduledFor    : scheduledDate.toISOString()
+        };
+    }
+
 }
