@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  # El emulador requiere una base de datos SQL Edge para funcionar internamente
+  mssql:
+    image: "mcr.microsoft.com/azure-sql-edge"
+    environment:
+      ACCEPT_EULA: "Y"
+      #SA_PASSWORD: ${LOCAL_MSSQL_SA_PASSWORD}
+      SA_PASSWORD: "Password12345!"
+    ports:
+      - "1433:1433"
+
+  service-bus-emulator:
+    image: mcr.microsoft.com/azure-messaging/servicebus-emulator
+    container_name: service-bus-emulator
+    ports:
+      - "5672:5672" # Puerto AMQP para enviar mensajes
+    environment:
+      SQL_SERVER: "mssql"
+      # MSSQL_SA_PASSWORD: ${LOCAL_BUS_EMULATOR_PASSWORD}
+      MSSQL_SA_PASSWORD: "Password12345!"
+      ACCEPT_EULA: "Y"
+    volumes:
+      # Montamos el config.json en la ruta que espera el emulador
+      # - D:/GitHub/MailStudio-Back/infra/config.json:/apps/ServiceBus_Emulator/Config/Config.json
+      - D:/GitHub/MailStudio-Back/infra:/apps/ServiceBus_Emulator/Config
+    depends_on:
+      - mssql
