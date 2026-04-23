@@ -19,6 +19,9 @@ interface EnvVars {
     PGDATABASE  : string;
     PGUSER      : string;
     PGPASSWORD  : string;
+
+    AZURE_BUS_CONNECTION    : string;
+    AZURE_QUEUE_NAME        : string;
 }
 
 const envsSchema = joi.object({
@@ -38,6 +41,9 @@ const envsSchema = joi.object({
     PGDATABASE  : joi.string().required(),
     PGUSER      : joi.string().required(),
     PGPASSWORD  : joi.string().required(),
+
+    AZURE_BUS_CONNECTION    : joi.string().required(),
+    AZURE_QUEUE_NAME        : joi.string().required(),
 })
 .unknown( true );
 
@@ -63,5 +69,10 @@ export const ENVS = {
         QUALITY     : envVars.FILE_MANAGER_QUALITY,
         MAX_RETRIES : envVars.FILE_MANAGER_MAX_RETRIES,
         RETRY_DELAY : envVars.FILE_MANAGER_RETRY_DELAY,
-    }
+    },
+
+    AZURE_BUS : {
+        CONNECTION  : envVars.AZURE_BUS_CONNECTION,
+        QUEUE_NAME  : envVars.AZURE_QUEUE_NAME,
+    },
 }
