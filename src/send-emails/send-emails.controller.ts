@@ -21,7 +21,8 @@ export class SendEmailsController {
     ) {
         const messages = payload.emails.map(email => ({
             email       : email,
-            template    : payload.template
+            template    : payload.template,
+            subject     : payload.subject
         }));
 
         await this.sendEmailsService.sendMassiveEmails( messages );
@@ -45,7 +46,8 @@ export class SendEmailsController {
 
         const messages: PayloadEmail[] = payload.emails.map( email => ({
             email       : email,
-            template    : payload.template
+            template    : payload.template,
+            subject     : payload.subject
         }));
 
         await this.sendEmailsService.sendScheduledEmails( messages, scheduledDate );
