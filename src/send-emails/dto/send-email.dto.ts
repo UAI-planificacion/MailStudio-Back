@@ -25,8 +25,12 @@ export class SendEmailDto {
     @Length( 1, 10000, { message: 'El campo template debe tener al menos 1 caracter y maximo 10000' } )
     template: string;
 
-}
+    @IsString( { message: 'El campo subject debe ser un string' } )
+    @IsNotEmpty( { message: 'El campo subject no puede estar vacío' } )
+    @Length( 1, 100, { message: 'El campo subject debe tener al menos 1 caracter y maximo 100' } )
+    subject: string;
 
+}
 
 
 export class SendEmailScheduleDto extends SendEmailDto {
