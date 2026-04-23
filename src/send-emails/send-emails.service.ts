@@ -7,7 +7,7 @@ import {
 } from '@azure/service-bus';
 
 import { PayloadEmail } from '@send-emails/models/payloadEmail.model';
-import { ENVS } from '@config/envs';
+import { ENVS }         from '@config/envs';
 
 
 @Injectable()
