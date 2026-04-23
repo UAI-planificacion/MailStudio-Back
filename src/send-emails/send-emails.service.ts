@@ -4,27 +4,40 @@ import {
     ServiceBusClient,
     ServiceBusMessage,
     ServiceBusSender
-} from '@azure/service-bus';
+}                       from '@azure/service-bus';
+import * as cronParser  from 'cron-parser';
 
-import { PayloadEmail } from '@send-emails/models/payloadEmail.model';
-import { ENVS }         from '@config/envs';
+import { ENVS }             from '@config/envs';
+import { PayloadEmail }     from '@send-emails/models/payloadEmail.model';
+import { transformToCron }  from '@send-emails/utils/cron-transformer';
+import { PrismaService }    from '@prisma/prisma.service';
 
 
 @Injectable()
 export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
     private sbClient        : ServiceBusClient;
     private sender          : ServiceBusSender;
+    private recurrenceSender: ServiceBusSender;
+
+
+    constructor( 
+        private readonly prisma: PrismaService,
+    ) { }
+
 
     private readonly connectString  : string = ENVS.AZURE_BUS.CONNECTION;
     private readonly queueName      : string = ENVS.AZURE_BUS.QUEUE_NAME;
+    private readonly queueRecurrent : string = ENVS.AZURE_BUS.QUEUE_RECURRENT_NAME;
 
 
     async onModuleInit() {
         this.sbClient   = new ServiceBusClient( this.connectString );
         this.sender     = this.sbClient.createSender( this.queueName );
+
+        this.recurrenceSender = this.sbClient.createSender( this.queueRecurrent );
     }
 
-
+    // ========================= MASIVOS (inmediatos) =========================
     async sendMassiveEmails( messages: PayloadEmail[] ) {
         let batch = await this.sender.createMessageBatch();
 
@@ -51,6 +64,7 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
     }
 
 
+    // ========================= PROGRAMADOS (UN SOLO ENVÍO) =========================
     async sendScheduledEmails( messages: PayloadEmail[], sendAt: Date ): Promise<Long[]> {
         const allSequenceNumbers: Long[] = [];
 
@@ -91,8 +105,47 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
     }
 
 
+    // ========================= RECURRENCIA =========================
+    async scheduleCampaignRecurrence(campaignId: string) {
+        // 1. Buscas en la DB los datos que guardó el Admin
+        const campaign = await this.prisma.campaign.findUnique({
+            where: { id: campaignId }
+        });
+
+        if (!campaign ) return;
+
+        // 2. Mapeas los campos de tu DB al formato del Transformer
+        const cronRule = transformToCron({
+            frequency   : campaign.frequency as any,
+            hour        : campaign.hour,
+            minute      : campaign.minute,
+            daysOfWeek  : campaign.daysOfWeek,
+            dayOfMonth  : campaign.dayOfMonth
+        });
+
+        // 3. Calculas la PRIMERA ejecución (para el trigger inicial)
+        // const interval = cronParser.parseExpression(cronRule);
+        const interval = (cronParser as any).parseExpression(cronRule);
+        const firstRun = interval.next().toDate();
+
+        // 4. "LLAMAS" AL WORKER enviando el mensaje al Service Bus
+        // Nota: Aquí es donde el Worker recibirá el cronRule y el ID
+        await this.recurrenceSender.scheduleMessages([{
+            body: { 
+                campaignId, 
+                cronRule  // El Worker ahora tiene el motor cron listo
+            },
+            contentType: 'application/json'
+        }], firstRun);
+
+        console.log(`✅ Campaña ${campaign.name} programada con Cron: ${cronRule}`);
+    }
+
+
+    
     async onModuleDestroy() {
         await this.sender.close();
+        await this.recurrenceSender.close();
         await this.sbClient.close();
     }
 
