@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "JobStatus" AS ENUM ('PENDING', 'PROGRAMMED', 'PROCESSING', 'COMPLETED', 'FAILED');
+
+-- AlterTable
+ALTER TABLE "SendEmailLog" ADD COLUMN     "status" "JobStatus" NOT NULL DEFAULT 'PENDING';

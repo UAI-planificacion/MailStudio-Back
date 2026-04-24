@@ -17,11 +17,15 @@ enum RecurrenceFrequency {
 }
 
 
-model Campaign {
+model Workflow {
     id          String   @id @default(ulid())
     name        String
     description String?
-    subject     String?
+
+    // Default values for email
+    subject     String
+    cc          String[]  @default([])
+    bcc         String[]  @default([])
 
     // Configuración del Mensaje
     templateId  String
@@ -29,23 +33,23 @@ model Campaign {
     studentEmails String[]
 
     // Lógica de Recurrencia (Estandarizada)
-    frequency   RecurrenceFrequency
-    interval    Int?      @default(1) // Cada X semanas/meses
-    daysOfWeek  Int[]     // [0, 1, 2...]
+    date        DateTime? // Para el caso ONCE
+    frequency   RecurrenceFrequency @default(ONCE)
+    interval    Int?     // Cada X semanas/meses
+    daysOfWeek  Int[]     @default([])     // [0, 1, 2...]
     dayOfMonth  Int?      
     monthOfYear Int?      
     hour        Int       // Obligatorio para el cron
     minute      Int       // Obligatorio para el cron
 
-    // INFRAESTRUCTURA (Clave para cancelar envíos)
     // Guardamos el último ID del Service Bus para poder cancelar si el admin lo desea
     lastSequenceNumber String? 
 
     // Auditoría
-    creator     Staff    @relation("CreatedCampaigns", fields: [createdBy], references: [id])
+    creator     Staff    @relation("CreatedWorkflows", fields: [createdBy], references: [id])
     createdBy   String
-    updater     Staff    @relation("UpdatedCampaigns", fields: [updatedBy], references: [id])
-    updatedBy   String
+    updater     Staff?   @relation("UpdatedWorkflows", fields: [updatedBy], references: [id])
+    updatedBy   String?
 
     active      Boolean  @default(true) // El "isActive" que detiene al Worker
 
@@ -60,7 +64,11 @@ model Template {
     id          String    @id @default(ulid())
     name        String    @unique
     content     Json
-    subject     String?
+
+    // Default values for email
+    subject     String?   @default("")
+    cc          String[]  @default([])
+    bcc         String[]  @default([])
 
     creator     Staff     @relation("CreatedTemplates", fields: [createdBy], references: [id])
     createdBy   String
@@ -72,7 +80,7 @@ model Template {
 
     // Relationships
     sendEmails SendEmailLog[]
-    campaigns Campaign[] @relation()
+    workflows Workflow[] @relation()
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -106,9 +114,9 @@ model Staff {
     createdTemplates Template[]  @relation("CreatedTemplates")
     updatedTemplates Template[]  @relation("UpdatedTemplates")
 
-    // Relacion con campaigns
-    createdCampaigns Campaign[]  @relation("CreatedCampaigns")
-    updatedCampaigns Campaign[]  @relation("UpdatedCampaigns")
+    // Relacion con workflows
+    createdWorkflows Workflow[]  @relation("CreatedWorkflows")
+    updatedWorkflows Workflow[]  @relation("UpdatedWorkflows")
 
     sentEmails       SendEmailLog[]
 
@@ -117,21 +125,45 @@ model Staff {
 }
 
 
+enum Priority {
+    NORMAL
+    HIGH
+}
+
+
+enum JobStatus {
+    PENDING
+    PROGRAMMED
+    PROCESSING
+    COMPLETED
+    FAILED
+}
+
+
 model SendEmailLog {
-    id         String   @id @default(ulid())
+    id          String   @id @default(ulid())
+    priority    Priority @default(NORMAL)
+    status      JobStatus @default(PENDING)
+    message     String?
 
-    template   Template @relation(fields: [templateId], references: [id])
-    templateId String
+    content     Json
 
-    sender     Staff    @relation(fields: [staffId], references: [id])
-    staffId    String
+    template    Template? @relation(fields: [templateId], references: [id])
+    templateId  String?
+
+    subject     String
+    cc          String[]
+    bcc         String[]
+
+    sender      Staff    @relation(fields: [staffId], references: [id])
+    staffId     String
 
     studentEmails String[]
 
-    campaign   Campaign? @relation(fields: [campaignId], references: [id])
-    campaignId String?
+    workflow    Workflow? @relation(fields: [workflowId], references: [id])
+    workflowId  String?
 
-    createdAt DateTime @default(now())
+    createdAt   DateTime @default(now())
 }
 
 // --------------------------------------
@@ -184,12 +216,12 @@ model City {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    @@unique([name, regionId]) // Evita ciudades duplicadas en la misma región
+    @@unique([name, regionId])
 }
 
 model Region {
     id        String   @id @default(ulid())
-    name      String   @unique // Ej: "Metropolitana", "Valparaíso"
+    name      String   @unique
 
     // Relaciones
     cities    City[]
@@ -200,8 +232,8 @@ model Region {
 
 
 model Building {
-    id          String    @id @default(ulid())
-    name        String    // Ej: Edificio A, Edificio C
+    id          String @id @default(ulid())
+    name        String
     headquarter Headquarters
 
     careers  Career[]  
