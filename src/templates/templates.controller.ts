@@ -17,6 +17,13 @@ export class TemplatesController {
 		return this.templatesService.create( createTemplateDto );
 	}
 
+    @Get( '/generated/:id' )
+	findGeneratedTemplate(
+        @Param( 'id' ) id: string
+    ) {
+		return this.templatesService.findTemplate( id );
+	}
+
 
     @Get( '/staff/:id' )
 	findAll(
