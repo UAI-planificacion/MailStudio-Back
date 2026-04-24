@@ -22,9 +22,14 @@ interface EnvVars {
 
     AZURE_BUS_CONNECTION    : string;
     AZURE_QUEUE_NAME        : string;
-    AZURE_QUEUE_RECURRENT_NAME        : string;
+    AZURE_QUEUE_RECURRENCE_NAME        : string;
 
+
+    IMAGE_UPLOAD_URL: string;
+
+    MAX_CONCURRENT_BATCHES: number;
 }
+
 
 const envsSchema = joi.object({
     PORT            : joi.number().required(),
@@ -44,9 +49,13 @@ const envsSchema = joi.object({
     PGUSER      : joi.string().required(),
     PGPASSWORD  : joi.string().required(),
 
-    AZURE_BUS_CONNECTION    : joi.string().required(),
-    AZURE_QUEUE_NAME        : joi.string().required(),
-    AZURE_QUEUE_RECURRENT_NAME        : joi.string().required(),
+    AZURE_BUS_CONNECTION        : joi.string().required(),
+    AZURE_QUEUE_NAME            : joi.string().required(),
+    AZURE_QUEUE_RECURRENCE_NAME : joi.string().required(),
+
+    IMAGE_UPLOAD_URL : joi.string().required(),
+
+    MAX_CONCURRENT_BATCHES : joi.number().optional(),
 
 })
 .unknown( true );
@@ -76,8 +85,11 @@ export const ENVS = {
     },
 
     AZURE_BUS : {
-        CONNECTION  : envVars.AZURE_BUS_CONNECTION,
-        QUEUE_NAME  : envVars.AZURE_QUEUE_NAME,
-        QUEUE_RECURRENT_NAME : envVars.AZURE_QUEUE_RECURRENT_NAME,
+        CONNECTION                  : envVars.AZURE_BUS_CONNECTION,
+        QUEUE_NAME                  : envVars.AZURE_QUEUE_NAME,
+        AZURE_QUEUE_RECURRENCE_NAME : envVars.AZURE_QUEUE_RECURRENCE_NAME,
+        MAX_CONCURRENT_BATCHES          : envVars.MAX_CONCURRENT_BATCHES,
     },
+
+    IMAGE_UPLOAD_URL: envVars.IMAGE_UPLOAD_URL,
 }
