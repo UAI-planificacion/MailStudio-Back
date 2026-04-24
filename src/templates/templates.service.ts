@@ -7,6 +7,8 @@ import {
 import { PrismaService }        from '@prisma/prisma.service';
 import { CreateTemplateDto }    from '@templates/dto/create-template.dto';
 import { UpdateTemplateDto }    from '@templates/dto/update-template.dto';
+import { generateTemplate }     from './utils/createTemplate';
+import { TemplateContent }      from './utils/templateContent.model';
 
 
 @Injectable( )
@@ -63,6 +65,24 @@ export class TemplatesService {
                 updatedAt: 'desc'
             }
 		});
+	}
+
+
+	async findTemplate( id : string ) {
+		const template = await this.prisma.template.findUnique({
+			where : { id, active : true },
+			select: {
+				content: true
+			},
+		});
+
+		if ( !template ) {
+			throw new NotFoundException ( `Template with id ${ id } not found` );
+		}
+
+        const templateContent : TemplateContent = template.content as any as TemplateContent;
+
+		return generateTemplate( templateContent );
 	}
 
 
