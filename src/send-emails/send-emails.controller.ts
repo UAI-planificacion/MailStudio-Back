@@ -1,12 +1,8 @@
-import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 
-import {
-    SendEmailDto,
-    SendEmailScheduleDto
-}                               from '@send-emails/dto/send-email.dto';
+import { SendEmailDto }         from '@send-emails/dto/send-email.dto';
 import { SendEmailsService }    from '@send-emails/send-emails.service';
-import { PayloadEmail }         from '@send-emails/models/payloadEmail.model';
-import { SendEmailWorkflowDto } from './dto/send-emal-workflow.dto';
+import { SendEmailWorkflowDto } from '@send-emails/dto/send-email-workflow.dto';
 
 
 @Controller( 'mail-sender' )
