@@ -7,11 +7,11 @@ import {
 import * as cronParser  from 'cron-parser';
 import { JobStatus }    from '@prisma/client';
 
-import { ENVS }             from '@config/envs';
-import { transformToCron }  from '@send-emails/utils/cron-transformer';
-import { PrismaService }    from '@prisma/prisma.service';
-import { SendEmailDto }     from '@send-emails/dto/send-email.dto';
-import { SendEmailWorkflowDto } from './dto/send-emal-workflow.dto';
+import { ENVS }                 from '@config/envs';
+import { transformToCron }      from '@send-emails/utils/cron-transformer';
+import { PrismaService }        from '@prisma/prisma.service';
+import { SendEmailDto }         from '@send-emails/dto/send-email.dto';
+import { SendEmailWorkflowDto } from '@send-emails/dto/send-email-workflow.dto';
 
 
 @Injectable()
