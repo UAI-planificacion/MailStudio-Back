@@ -7,6 +7,8 @@ import {
 import { PrismaService }        from '@prisma/prisma.service';
 import { CreateTemplateDto }    from '@templates/dto/create-template.dto';
 import { UpdateTemplateDto }    from '@templates/dto/update-template.dto';
+import { PaginationDto }        from '@common/dto/pagination.dto';
+import { PaginatedResult }      from '@common/interfaces/paginated-result.interface';
 import { generateTemplate }     from './utils/createTemplate';
 import { TemplateContent }      from './utils/templateContent.model';
 
@@ -31,40 +33,72 @@ export class TemplatesService {
 	}
 
 
-	async findAll( staffId : string ) {
+	async findAll(
+		staffId       : string,
+		paginationDto : PaginationDto,
+		name?         : string
+	) : Promise<PaginatedResult<any>> {
         // *TODO: tenemos que hacer algo con el staffId
+		const { page = 1, size = 10 } = paginationDto;
 
-		return await this.prisma.template.findMany({
-            select : {
-                id          : true,
-                name        : true,
-                content     : true,
-                updatedAt   : true,
-                createdAt   : true,
-                creator     : {
-                    select: {
-                        id      : true,
-                        name    : true,
-                        email   : true,
-                        role    : true,
-                    }
-                },
-                updater: {
-                    select : {
-                        id      : true,
-                        name    : true,
-                        email   : true,
-                        role    : true,
-                    }
-                },
-            },
-            where : {
-                active: true
-            },
-            orderBy : {
-                updatedAt: 'desc'
-            }
-		});
+		const skip  = ( page - 1 ) * size;
+		const take  = size;
+		const where : any = {
+			// active : true,
+			...( name && {
+				name : {
+					contains : name,
+					mode     : 'insensitive'
+				}
+			})
+		};
+
+		const [ items, total ] = await Promise.all([
+			this.prisma.template.findMany({
+				skip    : skip,
+				take    : take,
+				where   : where,
+				orderBy : {
+					updatedAt : 'desc'
+				},
+				select  : {
+					id        : true,
+					name      : true,
+					content   : true,
+					updatedAt : true,
+					createdAt : true,
+					creator   : {
+						select : {
+							id    : true,
+							name  : true,
+							email : true,
+							role  : true,
+						}
+					},
+					updater   : {
+						select : {
+							id    : true,
+							name  : true,
+							email : true,
+							role  : true,
+						}
+					},
+				},
+			}),
+			this.prisma.template.count({ where })
+		]);
+
+		const totalPages = Math.ceil( total / size );
+
+		return {
+			data : items,
+			meta : {
+				total      : total,
+				page       : page,
+				size       : size,
+				totalPages : totalPages,
+			}
+		};
 	}
 
 
