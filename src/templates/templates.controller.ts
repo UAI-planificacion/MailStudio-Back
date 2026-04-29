@@ -1,25 +1,35 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+	Controller,
+	Get,
+	Post,
+	Body,
+	Patch,
+	Param,
+	Delete,
+	Query
+}                           from '@nestjs/common';
 
-import { TemplatesService }     from '@templates/templates.service';
-import { CreateTemplateDto }    from '@templates/dto/create-template.dto';
-import { UpdateTemplateDto }    from '@templates/dto/update-template.dto';
+import { PaginationDto }    from '@common/dto/pagination.dto';
+import { TemplatesService }  from '@templates/templates.service';
+import { CreateTemplateDto } from '@templates/dto/create-template.dto';
+import { UpdateTemplateDto } from '@templates/dto/update-template.dto';
 
 
 @Controller( 'templates' )
 export class TemplatesController {
 
-	constructor( private readonly templatesService: TemplatesService ) {}
+	constructor( private readonly templatesService : TemplatesService ) {}
 
 	@Post()
 	create(
-        @Body() createTemplateDto: CreateTemplateDto
+        @Body() createTemplateDto : CreateTemplateDto
     ) {
 		return this.templatesService.create( createTemplateDto );
 	}
 
     @Get( '/generated/:id' )
 	findGeneratedTemplate(
-        @Param( 'id' ) id: string
+        @Param( 'id' ) id : string
     ) {
 		return this.templatesService.findTemplate( id );
 	}
@@ -27,9 +37,11 @@ export class TemplatesController {
 
     @Get( '/staff/:id' )
 	findAll(
-        @Param( 'id' ) id: string
+        @Param( 'id' ) id : string,
+		@Query() paginationDto : PaginationDto,
+		@Query( 'name' ) name? : string
     ) {
-		return this.templatesService.findAll( id );
+		return this.templatesService.findAll( id, paginationDto, name );
 	}
 
 
