@@ -31,6 +31,7 @@
             "@prisma/*"         : ["./src/prisma/*"],
             "@data/*"           : ["./src/data/*"],
             "@seed/*"           : ["./src/seed/*"],
+            "@workflow/*"       : ["./src/workflow/*"],
             "@app/*"            : ["./src/*"],
         }
     }
