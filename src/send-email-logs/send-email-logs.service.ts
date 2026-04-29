@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { JobStatus }  from '@prisma/client';
 
-import { PrismaService } from '@prisma/prisma.service';
+import { PrismaService }    from '@prisma/prisma.service';
+import { PaginationDto }    from '@common/dto/pagination.dto';
+import { PaginatedResult }  from '@common/interfaces/paginated-result.interface';
 
 
 @Injectable()
@@ -11,11 +13,12 @@ export class SendEmailLogsService {
 
 
 	async findAll(
-		page         : number = 1,
-		size         : number = 10,
-		emailDetails : boolean = false,
-		status?      : JobStatus
-	) {
+		paginationDto : PaginationDto,
+		emailDetails  : boolean = false,
+		status?       : JobStatus
+	) : Promise<PaginatedResult<any>> {
+		const { page = 1, size = 10 } = paginationDto;
+
 		const skip  = ( page - 1 ) * size;
 		const take  = size;
 		const where = status ? { status } : {};
