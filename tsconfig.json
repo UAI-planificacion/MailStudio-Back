@@ -24,6 +24,7 @@
             "@images/*"         : ["./src/images/*"],
             "@students/*"       : ["./src/students/*"],
             "@send-emails/*"    : ["./src/send-emails/*"],
+            "@send-email-logs/*": ["./src/send-email-logs/*"],
             "@staff/*"          : ["./src/staff/*"],
             "@templates/*"      : ["./src/templates/*"],
             "@services/*"       : ["./src/services/*"],
