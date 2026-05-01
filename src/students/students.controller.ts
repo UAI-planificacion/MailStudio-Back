@@ -12,7 +12,8 @@ import { SearchStudentDto } from '@students/dto/search-student.dto';
 
 @Controller( 'students' )
 export class StudentsController {
-	constructor(
+
+    constructor(
         private readonly studentsService : StudentsService
     ) {}
 
@@ -42,4 +43,5 @@ export class StudentsController {
 	getCohorts() {
 		return this.studentsService.getCohorts();
 	}
+
 }
