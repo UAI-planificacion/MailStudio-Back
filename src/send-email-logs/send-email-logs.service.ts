@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { JobStatus }  from '@prisma/client';
 
-import { PrismaService }    from '@prisma/prisma.service';
-import { PaginationDto }    from '@common/dto/pagination.dto';
-import { PaginatedResult }  from '@common/interfaces/paginated-result.interface';
+import { PrismaService }            from '@prisma/prisma.service';
+import { PaginationDto }            from '@common/dto/pagination.dto';
+import { PaginatedResult }          from '@common/interfaces/paginated-result.interface';
+import { SELECT_EMAIL_LOG_SEND }    from '@send-email-logs/utils/select';
 
 
 @Injectable()
@@ -25,40 +26,13 @@ export class SendEmailLogsService {
 
 		const [ items, total ] = await Promise.all([
 			this.prisma.sendEmailLog.findMany({
+                select  : SELECT_EMAIL_LOG_SEND,
 				skip    : skip,
 				take    : take,
 				where   : where,
 				orderBy : {
 					createdAt : 'desc',
 				},
-				select  : {
-					id            : true,
-					subject       : true,
-					priority      : true,
-					status        : true,
-					message       : true,
-					content       : true,
-					templateId    : true,
-					cc            : true,
-					bcc           : true,
-					studentEmails : true,
-					createdAt     : true,
-					sender        : {
-						select : {
-							id    : true,
-							name  : true,
-							email : true,
-							role  : true,
-						}
-					},
-					workflow      : {
-						select : {
-							id          : true,
-							name        : true,
-							description : true,
-						}
-					},
-				}
 			}),
 			this.prisma.sendEmailLog.count({ where })
 		]);
