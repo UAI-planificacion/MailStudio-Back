@@ -382,13 +382,14 @@ model Period {
 // --------------------------------------
 
 model Student {
-    id          String          @id @default(ulid())
-    name        String
-    email       String          @unique
-    status      StudentStatus   @default(ACTIVE)
-    cohort      String        // Ej: "2023"
-    birthDate   DateTime
-    rut         String
+    id              String          @id @default(ulid())
+    name            String
+    email           String          @unique
+    personalEmail   String?         @unique
+    status          StudentStatus   @default(ACTIVE)
+    cohort          String        // Ej: "2023"
+    birthDate       DateTime
+    rut             String
 
     // Ubicación
     cityId      String
