@@ -70,6 +70,7 @@ export class TemplatesService {
                     subject     : true,
                     cc          : true,
                     bcc         : true,
+                    active      : true,
 					creator     : {
 						select : {
 							id    : true,
@@ -125,7 +126,10 @@ export class TemplatesService {
 
 	async findOne( id : string ) {
 		const template = await this.prisma.template.findUnique({
-			where   : { id, active : true },
+			where   : {
+                id,
+                // active : true
+            },
 			include : {
 				creator : true,
 				updater : true,
