@@ -7,11 +7,12 @@ import {
 import * as cronParser  from 'cron-parser';
 import { JobStatus }    from '@prisma/client';
 
-import { ENVS }                 from '@config/envs';
-import { transformToCron }      from '@send-emails/utils/cron-transformer';
-import { PrismaService }        from '@prisma/prisma.service';
-import { SendEmailDto }         from '@send-emails/dto/send-email.dto';
-import { SendEmailWorkflowDto } from '@send-emails/dto/send-email-workflow.dto';
+import { ENVS }                     from '@config/envs';
+import { transformToCron }          from '@send-emails/utils/cron-transformer';
+import { PrismaService }            from '@prisma/prisma.service';
+import { SendEmailDto }             from '@send-emails/dto/send-email.dto';
+import { SendEmailWorkflowDto }     from '@send-emails/dto/send-email-workflow.dto';
+import { SELECT_EMAIL_LOG_SEND }    from '@send-email-logs/utils/select';
 
 
 @Injectable()
@@ -66,7 +67,8 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
                 content         : template.content!,
                 studentEmails   : students.map( s => s.email ),
                 status          : JobStatus.PROCESSING,
-            }
+            },
+            select: SELECT_EMAIL_LOG_SEND,
         });
 
         this.sendMassiveEmails( payload, sendEmailLog.id )
@@ -96,6 +98,7 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
             message     : "Proceso de envío programado exitosamente",
             notification: { sendEmailLog },
             count       : students.length,
+            sendEmailLog
         };
     }
 
