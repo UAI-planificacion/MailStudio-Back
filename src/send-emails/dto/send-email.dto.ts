@@ -9,21 +9,24 @@ import {
     IsOptional,
     IsString,
     Length,
+    MaxLength,
     ValidateNested
 } from "class-validator";
 
 
 export class StudentDto {
+
     @IsString( { message: 'El campo name debe ser un string' } )
-    @IsNotEmpty( { message: 'El campo name no puede estar vacío' } )
-    @Length( 1, 100, { message: 'El campo name debe tener al menos 1 caracter y maximo 100' } )
-    name: string;
+    @MaxLength( 100, { message: 'El campo name debe tener un maximo de 100 caracteres' } )
+    @IsOptional()
+    name?: string;
 
     @IsString( { message: 'El campo email debe ser un string' } )
     @IsNotEmpty( { message: 'El campo email no puede estar vacío' } )
     @Length( 1, 200, { message: 'El campo email debe tener al menos 1 caracter y maximo 200' } )
     @IsEmail( {}, { message: 'El email debe tener un formato válido' } )
     email: string;
+
 }
 
 
