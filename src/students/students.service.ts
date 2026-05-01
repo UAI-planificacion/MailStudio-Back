@@ -100,16 +100,17 @@ export class StudentsService {
 		const students = await this.prisma.student.findMany({
 			where,
 			select : {
-                id: true,
-                studyPlanId: true,
-                cityId: true,
-                name: true,
-                email: true,
-                status: true,
-                cohort: true,
-                birthDate: true,
-                rut: true,
-                headquarter: true,
+                id              : true,
+                studyPlanId     : true,
+                cityId          : true,
+                name            : true,
+                email           : true,
+                status          : true,
+                cohort          : true,
+                birthDate       : true,
+                rut             : true,
+                headquarter     : true,
+                personalEmail   : true,
 				city      : {
                     select : {
                         regionId : true
@@ -180,4 +181,3 @@ export class StudentsService {
 		return result.map(( s ) => s.cohort );
 	}
 }
-
