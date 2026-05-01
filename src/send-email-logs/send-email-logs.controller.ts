@@ -4,6 +4,7 @@ import {
 	Query,
 	DefaultValuePipe,
 	ParseBoolPipe,
+	ParseEnumPipe,
 } from '@nestjs/common';
 
 import { JobStatus }    from '@prisma/client';
@@ -16,15 +17,15 @@ import { SendEmailLogsService } from '@send-email-logs/send-email-logs.service';
 export class SendEmailLogsController {
 
 	constructor(
-        private readonly sendEmailLogsService: SendEmailLogsService
-    ) {}
+		private readonly sendEmailLogsService : SendEmailLogsService
+	) {}
 
 
-    @Get()
+	@Get()
 	async findAll(
 		@Query() paginationDto : PaginationDto,
 		@Query( 'emailDetails', new DefaultValuePipe( false ), ParseBoolPipe ) emailDetails : boolean,
-		@Query( 'status' ) status? : JobStatus
+		@Query( 'status', new ParseEnumPipe( JobStatus, { optional : true } ) ) status? : JobStatus
 	) {
 		return this.sendEmailLogsService.findAll( paginationDto, emailDetails, status );
 	}
