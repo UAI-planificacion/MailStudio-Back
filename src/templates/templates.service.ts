@@ -62,12 +62,15 @@ export class TemplatesService {
 					updatedAt : 'desc'
 				},
 				select  : {
-					id        : true,
-					name      : true,
-					content   : true,
-					updatedAt : true,
-					createdAt : true,
-					creator   : {
+					id          : true,
+					name        : true,
+					content     : true,
+					updatedAt   : true,
+					createdAt   : true,
+                    subject     : true,
+                    cc          : true,
+                    bcc         : true,
+					creator     : {
 						select : {
 							id    : true,
 							name  : true,
