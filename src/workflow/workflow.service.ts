@@ -1,20 +1,63 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { JobStatus } from '@prisma/client';
 
-import { PrismaService }         from '@prisma/prisma.service';
-import { SELECT_EMAIL_LOG_SEND } from '@send-email-logs/utils/select';
+import { Prisma, JobStatus, Workflow } from '@prisma/client';
+
+import { PaginatedResult }          from '@common/interfaces/paginated-result.interface';
+
+import { PrismaService }            from '@prisma/prisma.service';
+import { SELECT_EMAIL_LOG_SEND }    from '@send-email-logs/utils/select';
+import { UpdateWorkflowDto }        from '@workflow/dto/update-workflow.dto';
+import { StudentDto }               from '@send-emails/dto/send-email.dto';
+import { SendEmailWorkflowDto }     from '@send-emails/dto/send-email-workflow.dto';
+import { WorkflowValidationService } from '@common/service/workflow';
+import { FindAllWorkflowDto }        from './dto/find-all-workflow.dto';
 
 
 @Injectable()
 export class WorkflowService {
 
+    #studentsToJson( students: StudentDto[] ) {
+        return students.map( student => ({
+            email : student.email,
+            name  : student.name,
+        }));
+    }
+
     constructor(
         private readonly prisma: PrismaService,
+        private readonly workflowValidationService: WorkflowValidationService,
     ) {}
 
 
-    async findAll() {
-        return await this.prisma.workflow.findMany();
+    async findAll( query: FindAllWorkflowDto ): Promise<PaginatedResult<Workflow>> {
+        const { page = 1, size = 10, name, frequency, createdBy, active } = query;
+
+        const where: Prisma.WorkflowWhereInput = {
+            name      : name ? { contains: name, mode: 'insensitive' } : undefined,
+            frequency : frequency,
+            createdBy : createdBy,
+            active    : active,
+        };
+
+        const [ total, data ] = await Promise.all([
+            this.prisma.workflow.count( { where } ),
+            this.prisma.workflow.findMany({
+                where,
+                skip    : ( page - 1 ) * size,
+                take    : size,
+                orderBy : { createdAt: 'desc' },
+            }),
+        ]);
+
+        return {
+            data,
+            meta : {
+                total,
+                page,
+                size,
+                totalPages : Math.ceil( total / size ),
+            },
+        };
     }
 
 
@@ -36,6 +79,54 @@ export class WorkflowService {
         return workflow;
     }
 
+
+    async create( createWorkflowDto: SendEmailWorkflowDto ) {
+        this.workflowValidationService.validate( createWorkflowDto );
+
+        return await this.prisma.workflow.create({
+            data : {
+                ...createWorkflowDto,
+                students : this.#studentsToJson( createWorkflowDto.students ),
+            }
+        });
+    }
+
+
+    async update( id: string, updateWorkflowDto: UpdateWorkflowDto ) {
+        this.workflowValidationService.validate( updateWorkflowDto );
+
+        await this.findOne( id );
+
+        return await this.prisma.workflow.update({
+            where : { id },
+            data  : {
+                ...updateWorkflowDto,
+                students : updateWorkflowDto.students
+                    ? this.#studentsToJson( updateWorkflowDto.students )
+                    : undefined,
+            }
+        });
+    }
+
+
+    async remove( id: string ) {
+        await this.findOne( id );
+
+        const hasLogs = await this.prisma.sendEmailLog.findFirst({
+            where: { workflowId: id }
+        });
+
+        if ( hasLogs ) {
+            return await this.prisma.workflow.update({
+                where : { id },
+                data  : { active: false }
+            });
+        }
+
+        return await this.prisma.workflow.delete({
+            where: { id }
+        });
+    }
 
     /**
      * Llamado por el Worker para preparar la siguiente ejecución de un workflow recurrente.
@@ -115,4 +206,3 @@ export class WorkflowService {
     }
 
 }
-
