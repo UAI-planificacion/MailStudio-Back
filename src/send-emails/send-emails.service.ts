@@ -3,15 +3,21 @@ import { Injectable, OnModuleInit, OnModuleDestroy, NotFoundException, BadReques
 import {
     ServiceBusClient,
     ServiceBusSender
-}                                       from '@azure/service-bus';
-import { JobStatus, RecurrenceFrequency } from '@prisma/client';
+}                       from '@azure/service-bus';
+import {
+    JobStatus,
+    RecurrenceFrequency
+}                       from '@prisma/client';
 
-import { ENVS }                         from '@config/envs';
-import { transformToCron, calculateNextRunDate } from '@send-emails/utils/cron-transformer';
-import { PrismaService }                from '@prisma/prisma.service';
-import { SendEmailDto }                 from '@send-emails/dto/send-email.dto';
-import { SendEmailWorkflowDto }         from '@send-emails/dto/send-email-workflow.dto';
-import { SELECT_EMAIL_LOG_SEND }        from '@send-email-logs/utils/select';
+import {
+    transformToCron,
+    calculateNextRunDate
+}                                   from '@send-emails/utils/cron-transformer';
+import { ENVS }                     from '@config/envs';
+import { PrismaService }            from '@prisma/prisma.service';
+import { SendEmailDto }             from '@send-emails/dto/send-email.dto';
+import { SendEmailWorkflowDto }     from '@send-emails/dto/send-email-workflow.dto';
+import { SELECT_EMAIL_LOG_SEND }    from '@send-email-logs/utils/select';
 
 
 @Injectable()
