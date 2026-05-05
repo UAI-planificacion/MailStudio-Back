@@ -1,18 +1,17 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, NotFoundException } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, NotFoundException, BadRequestException } from '@nestjs/common';
 
 import {
     ServiceBusClient,
     ServiceBusSender
-}                       from '@azure/service-bus';
-import * as cronParser  from 'cron-parser';
-import { JobStatus }    from '@prisma/client';
+}                                       from '@azure/service-bus';
+import { JobStatus, RecurrenceFrequency } from '@prisma/client';
 
-import { ENVS }                     from '@config/envs';
-import { transformToCron }          from '@send-emails/utils/cron-transformer';
-import { PrismaService }            from '@prisma/prisma.service';
-import { SendEmailDto }             from '@send-emails/dto/send-email.dto';
-import { SendEmailWorkflowDto }     from '@send-emails/dto/send-email-workflow.dto';
-import { SELECT_EMAIL_LOG_SEND }    from '@send-email-logs/utils/select';
+import { ENVS }                         from '@config/envs';
+import { transformToCron, calculateNextRunDate } from '@send-emails/utils/cron-transformer';
+import { PrismaService }                from '@prisma/prisma.service';
+import { SendEmailDto }                 from '@send-emails/dto/send-email.dto';
+import { SendEmailWorkflowDto }         from '@send-emails/dto/send-email-workflow.dto';
+import { SELECT_EMAIL_LOG_SEND }        from '@send-email-logs/utils/select';
 
 
 @Injectable()
@@ -22,7 +21,7 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
     private recurrenceSender: ServiceBusSender;
 
 
-    constructor( 
+    constructor(
         private readonly prisma: PrismaService,
     ) { }
 
@@ -151,148 +150,124 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
         console.log(`${students.length} correos procesados.`);
     }
 
-    // ========================= PROGRAMADOS (UN SOLO ENVÍO) =========================
-    // async sendScheduledEmails( messages: PayloadEmail[], sendAt: Date ): Promise<Long[]> {
-    //     const allSequenceNumbers: Long[] = [];
 
-    //     let currentBatch: ServiceBusMessage[] = [];
-
-    //     for ( const emailData of messages ) {
-    //         currentBatch.push({
-    //             body        : emailData,
-    //             contentType : "application/json"
-    //         });
-
-    //         if ( currentBatch.length === 100 ) {
-    //             // Pasamos los mensajes y la fecha por separado para evitar el error de argumentos
-    //             const ids = await this.sender.scheduleMessages( currentBatch, sendAt );
-
-    //             // Convertimos cada ID (tipo Long) a string para guardarlo fácil en la BD
-    //             allSequenceNumbers.push( ...ids.map(id => id ));
-
-    //             currentBatch = [];
-    //         }
-    //     }
-
-    //     if ( currentBatch.length > 0 ) {
-    //         const ids = await this.sender.scheduleMessages( currentBatch, sendAt );
-
-    //         allSequenceNumbers.push(...ids.map( id => id ));
-    //     }
-
-    //     console.log(`${messages.length} correos programados para el ${sendAt.toISOString()}`);
-
-    //     return allSequenceNumbers;
-    // }
-
-
-    // async sendScheduledEmails(
-    //     messages    : PayloadEmail[],
-    //     sendAt      : Date
-    // ): Promise<Long[]> {
-    //     const allSequenceNumbers: Long[] = [];
-
-    //     // Usamos createMessageBatch solo para calcular el tamaño permitido
-    //     let tempBatch = await this.sender.createMessageBatch();
-    //     let currentBatch: ServiceBusMessage[] = [];
-
-    //     // Usaremos Promise.all para que las peticiones de programación no bloqueen el bucle
-    //     const schedulePromises: Promise<Long[]>[] = [];
-
-    //     for (const emailData of messages) {
-    //         const busMessage: ServiceBusMessage = {
-    //             body: emailData,
-    //             contentType: "application/json"
-    //         };
-
-    //         // Verificamos si el mensaje cabe en el tamaño del lote
-    //         if (!tempBatch.tryAddMessage(busMessage)) {
-    //             // Si no cabe, mandamos el lote actual a programar
-    //             schedulePromises.push(this.sender.scheduleMessages(currentBatch, sendAt));
-
-    //             // Reiniciamos lote temporal y array de mensajes
-    //             tempBatch = await this.sender.createMessageBatch();
-    //             currentBatch = [];
-
-    //             // Añadimos el mensaje que no cupo
-    //             tempBatch.tryAddMessage(busMessage);
-    //             currentBatch.push(busMessage);
-    //         } else {
-    //             // Si cabe, lo añadimos al array que realmente enviaremos
-    //             currentBatch.push(busMessage);
-    //         }
-
-    //         // Control de concurrencia: No satures el socket de red si son miles
-    //         if (schedulePromises.length >= 5) {
-    //             const results = await Promise.all(schedulePromises);
-    //             results.forEach(ids => allSequenceNumbers.push(...ids));
-    //             schedulePromises.length = 0;
-    //         }
-    //     }
-
-    //     // Procesar el último lote restante
-    //     if (currentBatch.length > 0) {
-    //         schedulePromises.push(this.sender.scheduleMessages(currentBatch, sendAt));
-    //     }
-
-    //     const finalResults = await Promise.all(schedulePromises);
-    //     finalResults.forEach(ids => allSequenceNumbers.push(...ids));
-
-    //     console.log(`✅ ${messages.length} correos programados para el ${sendAt.toISOString()}`);
-    //     return allSequenceNumbers;
-    // }
-
-
-
-    // ========================= Programado con o sin recurrencia =========================
+    // ========================= WORKFLOW (programado / recurrente) =========================
     async startEmailWorkflow( payload: SendEmailWorkflowDto ) {
+        const {
+            name, description, templateId, subject, cc, bcc,
+            students, createdBy, frequency, date,
+            hour, minute, interval, daysOfWeek, dayOfMonth, monthOfYear,
+            lastDayOfMonth, occurrences, repeatUntil, neverEnds,
+        } = payload;
 
-        
-
-
-    }
-
-
-
-    async scheduleWorkflowRecurrence( workflowId: string ) {
-        // 1. Buscas en la DB los datos que guardó el Admin
-        const workflow = await this.prisma.workflow.findUnique({
-            where: { id: workflowId }
+        // 1. Validar template
+        const template = await this.prisma.template.findUnique({
+            where  : { id: templateId, active: true },
+            select : { content: true, subject: true },
         });
 
-        if ( !workflow ) return;
+        if ( !template ) throw new NotFoundException( "Template no encontrado" );
 
-        // 2. Mapeas los campos de tu DB al formato del Transformer
-        const cronRule = transformToCron({
-            frequency   : workflow.frequency as any,
-            hour        : workflow.hour,
-            minute      : workflow.minute,
-            daysOfWeek  : workflow.daysOfWeek,
-            dayOfMonth  : workflow.dayOfMonth
-        });
+        // 2. Resolver subject: del DTO o fallback al template
+        const resolvedSubject = subject ?? template.subject;
 
-        // 3. Calculas la PRIMERA ejecución (para el trigger inicial)
-        // const interval = cronParser.parseExpression(cronRule);
-        const interval = (cronParser as any).parseExpression(cronRule);
-        const firstRun = interval.next().toDate();
+        if ( !resolvedSubject ) {
+            throw new BadRequestException( "Se requiere un asunto. Provéelo en el payload o en el template." );
+        }
 
-        // 4. "LLAMAS" AL WORKER enviando el mensaje al Service Bus
-        // Nota: Aquí es donde el Worker recibirá el cronRule y el ID
-        await this.recurrenceSender.scheduleMessages([{
-            body: { 
-                workflowId, 
-                cronRule  // El Worker ahora tiene el motor cron listo
+        // 3. Determinar frecuencia (default ONCE)
+        const resolvedFrequency = frequency ?? RecurrenceFrequency.ONCE;
+        const isOnce            = resolvedFrequency === RecurrenceFrequency.ONCE;
+
+        // 4. Validar fecha para ONCE
+        if ( isOnce && date && new Date( date ) <= new Date() ) {
+            throw new BadRequestException( "La fecha de programación debe ser futura." );
+        }
+
+        // 5. Crear Workflow en DB
+        const workflow = await this.prisma.workflow.create({
+            data: {
+                name,
+                description,
+                subject         : resolvedSubject,
+                cc              : cc  ?? [],
+                bcc             : bcc ?? [],
+                templateId,
+                students        : students.map( s => ({ email: s.email, name: s.name }) ),
+                date            : isOnce ? date : null,
+                frequency       : resolvedFrequency,
+                interval,
+                daysOfWeek      : daysOfWeek    ?? [],
+                dayOfMonth,
+                monthOfYear,
+                hour,
+                minute,
+                lastDayOfMonth  : lastDayOfMonth ?? false,
+                occurrences,
+                repeatUntil,
+                neverEnds       : isOnce ? false : ( neverEnds ?? false ),
+                createdBy,
             },
-            contentType: 'application/json'
-        }], firstRun);
+        });
 
-        console.log(`✅ Workflow ${workflow.name} programado con Cron: ${cronRule}`);
-    }
+        // 6. Crear SendEmailLog (PENDING) vinculado al Workflow
+        const sendEmailLog = await this.prisma.sendEmailLog.create({
+            data: {
+                templateId,
+                subject         : resolvedSubject,
+                staffId         : createdBy,
+                cc              : cc  ?? [],
+                bcc             : bcc ?? [],
+                content         : template.content!,
+                studentEmails   : students.map( s => s.email ),
+                status          : JobStatus.PENDING,
+                workflowId      : workflow.id,
+            },
+            select: SELECT_EMAIL_LOG_SEND,
+        });
 
+        // 7. Calcular fecha de primera ejecución y programar en Service Bus
+        let firstRun: Date;
+        let cronRule: string | null = null;
 
-    async cancelScheduledEmails( sequenceNumbers: Long[] ) {
-        const idsToCancel = sequenceNumbers.map( id => id );
-        await this.sender.cancelScheduledMessages( idsToCancel );
+        if ( isOnce ) {
+            // ONCE: usar la fecha directa, o enviar de inmediato si no hay fecha
+            firstRun = date ? new Date( date ) : new Date();
+        } else {
+            // Recurrente: calcular primera ejecución con cron / lastDayOfMonth
+            const recurrenceSettings = {
+                frequency       : resolvedFrequency,
+                hour,
+                minute,
+                daysOfWeek,
+                dayOfMonth,
+                lastDayOfMonth,
+            };
+
+            cronRule = lastDayOfMonth ? null : transformToCron( recurrenceSettings );
+            firstRun = calculateNextRunDate( recurrenceSettings );
+        }
+
+        await this.recurrenceSender.scheduleMessages([{
+            body: {
+                workflowId      : workflow.id,
+                cronRule,
+                sendEmailLogId  : sendEmailLog.id,
+            },
+            contentType: 'application/json',
+        }], firstRun );
+
+        console.log( `✅ Workflow "${workflow.name}" programado para: ${firstRun.toISOString()}` );
+
+        return {
+            message     : isOnce
+                ? "Envío único programado exitosamente"
+                : "Workflow recurrente creado exitosamente",
+            workflow    : { id: workflow.id, name: workflow.name },
+            sendEmailLog,
+            scheduledFor: firstRun.toISOString(),
+            count       : students.length,
+        };
     }
 
 
