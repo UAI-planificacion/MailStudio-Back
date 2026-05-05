@@ -6,12 +6,15 @@ import {
     IsArray,
     IsBoolean,
     IsDateString,
+    IsEmail,
     IsEnum,
     IsNotEmpty,
     IsNumber,
     IsOptional,
     IsString,
     Length,
+    Max,
+    Min,
     ValidateNested
 }               from "class-validator";
 import { Type } from "class-transformer";
@@ -38,11 +41,13 @@ export class SendEmailWorkflowDto {
 
     @IsArray( { message: 'El CC debe ser un array' } )
     @IsString({ each: true, message: 'El CC debe ser un array de strings' })
+    @IsEmail( {}, { each: true, message: 'Todos los correos en cc deben ser válidos' } )
     @IsOptional()
     cc?: string[];
 
     @IsArray({ message: 'El BCC debe ser un array' })
     @IsString({ each: true, message: 'El BCC debe ser un array de strings' })
+    @IsEmail( {}, { each: true, message: 'Todos los correos en cc deben ser válidos' } )
     @IsOptional()
     bcc?: string[];
 
@@ -62,27 +67,39 @@ export class SendEmailWorkflowDto {
 
     @IsNumber({}, { message: 'El intervalo debe ser un número' })
     @IsOptional()
+    @Min( 1 )
+    @Max( 999999 )
     interval?: number;
 
     @IsArray({ message: 'Los días de la semana deben ser un array' })
     @IsNumber({}, { each: true, message: 'Los días de la semana deben ser números' })
+    @Min( 1, { each: true, message: 'Los días de la semana deben ser números entre 1 y 7' } )
+    @Max( 7, { each: true, message: 'Los días de la semana deben ser números entre 1 y 7' } )
     @IsOptional()
     daysOfWeek?: number[];
 
     @IsNumber({}, { message: 'El día del mes debe ser un número' })
     @IsOptional()
+    @Min( 1 )
+    @Max( 31 )
     dayOfMonth?: number;
 
     @IsNumber({}, { message: 'El mes debe ser un número' })
     @IsOptional()
+    @Min( 1 )
+    @Max( 12 )
     monthOfYear?: number;
 
     @IsNumber({}, { message: 'La hora debe ser un número' })
     @IsNotEmpty({ message: 'La hora es requerida' })
+    @Min( 0 )
+    @Max( 23 )
     hour: number;
 
     @IsNumber({}, { message: 'El minuto debe ser un número' })
     @IsNotEmpty({ message: 'El minuto es requerido' })
+    @Min( 0 )
+    @Max( 59 )
     minute: number;
 
     @IsBoolean({ message: 'El campo lastDayOfMonth debe ser un booleano' })
@@ -91,6 +108,8 @@ export class SendEmailWorkflowDto {
 
     @IsNumber({}, { message: 'El campo occurrences debe ser un número' })
     @IsOptional()
+    @Min( 0 )
+    @Max( 999999 )
     occurrences?: number;
 
     @IsDateString({}, { message: 'El campo repeatUntil debe ser una fecha válida' })
