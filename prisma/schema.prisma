@@ -49,8 +49,6 @@ model Workflow {
     repeatUntil DateTime?
     neverEnds   Boolean? @default(false)
 
-
-
     // Auditoría
     creator     Staff    @relation("CreatedWorkflows", fields: [createdBy], references: [id])
     createdBy   String
