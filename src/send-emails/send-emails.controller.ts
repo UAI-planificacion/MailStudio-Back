@@ -27,30 +27,4 @@ export class SendEmailsController {
         return await this.sendEmailsService.startEmailWorkflow( payload );
     }
 
-
-    // @Post('schedule')
-    // async scheduleCampaign(
-    //     @Body() payload: SendEmailScheduleDto
-    // ) {
-    //     const scheduledDate = new Date( payload.sendAt );
-
-    //     if ( scheduledDate <= new Date() ) {
-    //         throw new BadRequestException( 'La fecha de programación debe ser futura.' );
-    //     }
-
-    //     const messages: PayloadEmail[] = payload.students.map( student => ({
-    //         student,
-    //         templateId  : payload.templateId,
-    //         subject     : payload.subject
-    //     }));
-
-    //     await this.sendEmailsService.sendScheduledEmails( messages, scheduledDate );
-
-    //     return {
-    //         status          : 'Campaña programada exitosamente',
-    //         totalEmails     : messages.length,
-    //         scheduledFor    : scheduledDate.toISOString()
-    //     };
-    // }
-
 }
