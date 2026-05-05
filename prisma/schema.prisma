@@ -23,14 +23,14 @@ model Workflow {
     description String?
 
     // Default values for email
-    subject     String
+    subject     String?
     cc          String[]  @default([])
     bcc         String[]  @default([])
 
     // Configuración del Mensaje
     templateId  String
     template    Template @relation(fields: [templateId], references: [id])
-    studentEmails String[]
+    students    Json
 
     // Lógica de Recurrencia (Estandarizada)
     date        DateTime? // Para el caso ONCE
@@ -42,8 +42,14 @@ model Workflow {
     hour        Int       // Obligatorio para el cron
     minute      Int       // Obligatorio para el cron
 
-    // Guardamos el último ID del Service Bus para poder cancelar si el admin lo desea
-    lastSequenceNumber String? 
+    lastDayOfMonth Boolean? @default(false)
+
+    // Con recurrencias
+    occurrences Int?
+    repeatUntil DateTime?
+    neverEnds   Boolean? @default(false)
+
+
 
     // Auditoría
     creator     Staff    @relation("CreatedWorkflows", fields: [createdBy], references: [id])
