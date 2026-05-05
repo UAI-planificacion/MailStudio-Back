@@ -4,6 +4,7 @@ import {
     ArrayMaxSize,
     ArrayMinSize,
     IsArray,
+    IsBoolean,
     IsDateString,
     IsEnum,
     IsNotEmpty,
@@ -50,19 +51,14 @@ export class SendEmailWorkflowDto {
     @Length( 26, 26, { message: 'El ID de la plantilla debe tener 26 caracteres' } )
     templateId: string;
 
-    @IsArray({ message: 'Los destinatarios deben ser un array' })
-    @IsString({ each: true, message: 'Los destinatarios deben ser un array de strings' })
-    @IsNotEmpty({ message: 'Los destinatarios son requeridos' })
-    studentEmails: string[]
-
     @IsDateString({}, { message: 'La fecha debe ser una fecha válida' })
     @IsOptional()
-    @Type(() => Date)
+    @Type( () => Date )
     date?: Date;
 
-    @IsEnum(RecurrenceFrequency, { message: `La frecuencia debe ser una de las siguientes: ${Object.values( RecurrenceFrequency ).join( ', ' )}` })
+    @IsEnum( RecurrenceFrequency, { message: `La frecuencia debe ser una de las siguientes: ${Object.values( RecurrenceFrequency ).join( ', ' )}` })
     @IsOptional()
-    frequency?: RecurrenceFrequency
+    frequency?: RecurrenceFrequency;
 
     @IsNumber({}, { message: 'El intervalo debe ser un número' })
     @IsOptional()
@@ -88,6 +84,23 @@ export class SendEmailWorkflowDto {
     @IsNumber({}, { message: 'El minuto debe ser un número' })
     @IsNotEmpty({ message: 'El minuto es requerido' })
     minute: number;
+
+    @IsBoolean({ message: 'El campo lastDayOfMonth debe ser un booleano' })
+    @IsOptional()
+    lastDayOfMonth?: boolean;
+
+    @IsNumber({}, { message: 'El campo occurrences debe ser un número' })
+    @IsOptional()
+    occurrences?: number;
+
+    @IsDateString({}, { message: 'El campo repeatUntil debe ser una fecha válida' })
+    @IsOptional()
+    @Type( () => Date )
+    repeatUntil?: Date;
+
+    @IsBoolean({ message: 'El campo neverEnds debe ser un booleano' })
+    @IsOptional()
+    neverEnds?: boolean;
 
     @IsArray( { message: 'El campo students debe ser un array' } )
     @IsNotEmpty( { message: 'El campo students no puede estar vacío' } )
