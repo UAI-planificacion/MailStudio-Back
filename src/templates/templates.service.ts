@@ -11,6 +11,7 @@ import { PaginationDto }        from '@common/dto/pagination.dto';
 import { PaginatedResult }      from '@common/interfaces/paginated-result.interface';
 import { generateTemplate }     from './utils/createTemplate';
 import { TemplateContent }      from './utils/templateContent.model';
+import { SELECT_TEMPLATE, transformOneTemplateResponse, transformTemplateResponse } from './utils/selectTemplate';
 
 
 @Injectable( )
@@ -21,12 +22,32 @@ export class TemplatesService {
 
 	async create( createTemplateDto : CreateTemplateDto ) {
 		try {
-			const data = {
-				...createTemplateDto,
-				updatedBy : createTemplateDto.updatedBy || createTemplateDto.createdBy,
+            const { images, ...templateData }  = createTemplateDto;
+
+            const data = {
+				...templateData,
+				updatedBy : templateData.updatedBy || templateData.createdBy,
 			};
 
-			return await this.prisma.template.create({ data });
+			const newTemplate = await this.prisma.template.create({ data });
+
+            if  (( images?.length ?? 0 ) > 0 ) {
+                const data = images!.map( image => ({
+                    templateId  : newTemplate.id,
+                    imageId     : image,
+                }));
+
+                await this.prisma.templateImage.createMany({
+                    data
+                });
+            }
+
+            const template = await this.prisma.template.findUnique({
+                where   : { id: newTemplate.id },
+                select  : SELECT_TEMPLATE
+            });
+
+            return transformOneTemplateResponse( template! );
 		} catch ( error ) {
 			throw PrismaException.catch( error );
 		}
@@ -61,33 +82,7 @@ export class TemplatesService {
 				orderBy : {
 					updatedAt : 'desc'
 				},
-				select  : {
-					id          : true,
-					name        : true,
-					content     : true,
-					updatedAt   : true,
-					createdAt   : true,
-                    subject     : true,
-                    cc          : true,
-                    bcc         : true,
-                    active      : true,
-					creator     : {
-						select : {
-							id    : true,
-							name  : true,
-							email : true,
-							role  : true,
-						}
-					},
-					updater   : {
-						select : {
-							id    : true,
-							name  : true,
-							email : true,
-							role  : true,
-						}
-					},
-				},
+				select  : SELECT_TEMPLATE
 			}),
 			this.prisma.template.count({ where })
 		]);
@@ -95,7 +90,8 @@ export class TemplatesService {
 		const totalPages = Math.ceil( total / size );
 
 		return {
-			data : items,
+			// data :items.map( transformTemplateResponse ),
+			data :transformTemplateResponse( items ),
 			meta : {
 				total      : total,
 				page       : page,
@@ -130,26 +126,62 @@ export class TemplatesService {
                 id,
                 // active : true
             },
-			include : {
-				creator : true,
-				updater : true,
-			},
+			// include : {
+			// 	creator : true,
+			// 	updater : true,
+			// },
+            select : SELECT_TEMPLATE
 		});
 
 		if ( !template ) {
 			throw new NotFoundException ( `Template with id ${ id } not found` );
 		}
 
-		return template;
+		return transformOneTemplateResponse( template );
 	}
 
 
 	async update( id : string, updateTemplateDto : UpdateTemplateDto ) {
 		try {
-			return await this.prisma.template.update({
-				where : { id },
-				data  : updateTemplateDto,
+			const { images, ...data } = updateTemplateDto;
+
+			let template: any = await this.prisma.template.update({
+				where	: { id },
+				data	: data,
 			});
+
+			if ( images ) {
+				const currentImages	= await this.prisma.templateImage.findMany({
+					where	: { templateId : id },
+					select	: { imageId	   : true },
+				});
+
+				const currentIds	= currentImages.map( ( ti ) => ti.imageId ).sort();
+				const incomingIds	= [ ...images ].sort();
+
+				if ( JSON.stringify( currentIds ) !== JSON.stringify( incomingIds ) ) {
+					if ( currentImages.length > 0 ) {
+						await this.prisma.templateImage.deleteMany({
+							where	: { templateId : id },
+						});
+					}
+
+					if ( images.length > 0 ) {
+						const imageData	= images.map( ( imageId ) => ({
+							templateId	: id,
+							imageId		: imageId,
+						}));
+
+						await this.prisma.templateImage.createMany({
+							data: imageData,
+						});
+
+                        template.images = images;
+					}
+				}
+			}
+
+            return transformOneTemplateResponse( template );
 		} catch ( error ) {
 			throw PrismaException.catch( error );
 		}
