@@ -169,13 +169,13 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
         // 1. Validar template
         const template = await this.prisma.template.findUnique({
             where  : { id: templateId, active: true },
-            select : { content: true, subject: true },
+            select : { content: true, name: true },
         });
 
         if ( !template ) throw new NotFoundException( "Template no encontrado" );
 
         // 2. Resolver subject: del DTO o fallback al template
-        const resolvedSubject = subject ?? template.subject;
+        const resolvedSubject = subject ?? template.name;
 
         if ( !resolvedSubject ) {
             throw new BadRequestException( "Se requiere un asunto. Provéelo en el payload o en el template." );
