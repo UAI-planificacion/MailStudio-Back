@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService }      from '@prisma/prisma.service';
 import { PrismaException }    from '@prisma/prisma-catch';
@@ -68,6 +68,23 @@ export class ImagesService {
 
 	async remove( id : string ) {
 		try {
+            const templateImage = await this.prisma.templateImage.findFirst({
+                where: {
+                    imageId: id,
+                },
+                select :{
+                    image: {
+                        select: {
+                            name: true
+                        }
+                    },
+                }
+            });
+
+            if ( templateImage ) {
+                throw new BadRequestException ( `La imagen "${ templateImage.image.name }" no puede ser eliminada porque esta asociada a un template` );
+            }
+
 			const image = await this.findOne( id );
 
 			await this.fileManagerService.delete( image.url );
