@@ -4,14 +4,20 @@ import {
     ERROR_MESSAGES,
     PrismaException
 }                               from '@prisma/prisma-catch';
+import {
+    SELECT_TEMPLATE,
+    transformOneTemplateResponse,
+    transformTemplateResponse
+}                               from '@templates/utils/selectTemplate';
+import { PaginationFilterDto }  from '@common/dto/pagination-filter.dto';
+import { PaginatedResult }      from '@common/interfaces/paginated-result.interface';
+import { Prisma }               from '@prisma/client';
 import { PrismaService }        from '@prisma/prisma.service';
 import { CreateTemplateDto }    from '@templates/dto/create-template.dto';
 import { UpdateTemplateDto }    from '@templates/dto/update-template.dto';
-import { PaginationDto }        from '@common/dto/pagination.dto';
-import { PaginatedResult }      from '@common/interfaces/paginated-result.interface';
-import { generateTemplate }     from './utils/createTemplate';
-import { TemplateContent }      from './utils/templateContent.model';
-import { SELECT_TEMPLATE, transformOneTemplateResponse, transformTemplateResponse } from './utils/selectTemplate';
+import { TemplateResponse }     from '@templates/interfaces/template-response.interface';
+import { generateTemplate }     from '@templates/utils/createTemplate';
+import { TemplateContent }      from '@templates/utils/templateContent.model';
 
 
 @Injectable( )
@@ -20,34 +26,39 @@ export class TemplatesService {
 	constructor( private readonly prisma : PrismaService ) { }
 
 
-	async create( createTemplateDto : CreateTemplateDto ) {
+	async create( createTemplateDto : CreateTemplateDto ) : Promise<TemplateResponse> {
 		try {
-            const { images, ...templateData }  = createTemplateDto;
+			const { images, ...templateData } = createTemplateDto;
 
-            const data = {
+			const data = {
 				...templateData,
 				updatedBy : templateData.updatedBy || templateData.createdBy,
 			};
 
 			const newTemplate = await this.prisma.template.create({ data });
 
-            if  (( images?.length ?? 0 ) > 0 ) {
-                const data = images!.map( image => ({
-                    templateId  : newTemplate.id,
-                    imageId     : image,
-                }));
+			if ( ( images?.length ?? 0 ) > 0 ) {
+				const foundImages = await this.prisma.image.findMany({
+					where  : { url : { in : images } },
+					select : { id  : true }
+				});
 
-                await this.prisma.templateImage.createMany({
-                    data
-                });
-            }
+				const data = foundImages.map( ( image ) => ({
+					templateId : newTemplate.id,
+					imageId    : image.id,
+				}));
 
-            const template = await this.prisma.template.findUnique({
-                where   : { id: newTemplate.id },
-                select  : SELECT_TEMPLATE
-            });
+				await this.prisma.templateImage.createMany({
+					data
+				});
+			}
 
-            return transformOneTemplateResponse( template! );
+			const template = await this.prisma.template.findUnique({
+				where  : { id : newTemplate.id },
+				select : SELECT_TEMPLATE
+			});
+
+			return transformOneTemplateResponse( template! );
 		} catch ( error ) {
 			throw PrismaException.catch( error );
 		}
@@ -55,16 +66,15 @@ export class TemplatesService {
 
 
 	async findAll(
-		staffId       : string,
-		paginationDto : PaginationDto,
-		name?         : string
-	) : Promise<PaginatedResult<any>> {
+		staffId             : string,
+		paginationFilterDto : PaginationFilterDto
+	) : Promise<PaginatedResult<TemplateResponse>> {
         // *TODO: tenemos que hacer algo con el staffId
-		const { page = 1, size = 10 } = paginationDto;
+		const { page = 1, size = 10, name } = paginationFilterDto;
 
 		const skip  = ( page - 1 ) * size;
 		const take  = size;
-		const where : any = {
+		const where : Prisma.TemplateWhereInput = {
 			// active : true,
 			...( name && {
 				name : {
@@ -80,7 +90,7 @@ export class TemplatesService {
 				take    : take,
 				where   : where,
 				orderBy : {
-					updatedAt : 'desc'
+					createdAt : 'desc'
 				},
 				select  : SELECT_TEMPLATE
 			}),
@@ -120,7 +130,7 @@ export class TemplatesService {
 	}
 
 
-	async findOne( id : string ) {
+	async findOne( id : string ) : Promise<TemplateResponse> {
 		const template = await this.prisma.template.findUnique({
 			where   : {
                 id,
@@ -141,47 +151,56 @@ export class TemplatesService {
 	}
 
 
-	async update( id : string, updateTemplateDto : UpdateTemplateDto ) {
+	async update( id : string, updateTemplateDto : UpdateTemplateDto ) : Promise<TemplateResponse> {
 		try {
 			const { images, ...data } = updateTemplateDto;
 
-			let template: any = await this.prisma.template.update({
-				where	: { id },
-				data	: data,
+			await this.prisma.template.update({
+				where : { id },
+				data  : data,
 			});
 
 			if ( images ) {
-				const currentImages	= await this.prisma.templateImage.findMany({
-					where	: { templateId : id },
-					select	: { imageId	   : true },
+				const foundImages = await this.prisma.image.findMany({
+					where  : { url : { in : images } },
+					select : { id  : true }
 				});
 
-				const currentIds	= currentImages.map( ( ti ) => ti.imageId ).sort();
-				const incomingIds	= [ ...images ].sort();
+				const incomingIds = foundImages.map( ( i ) => i.id ).sort();
+
+				const currentImages = await this.prisma.templateImage.findMany({
+					where  : { templateId : id },
+					select : { imageId    : true },
+				});
+
+				const currentIds = currentImages.map( ( ti ) => ti.imageId ).sort();
 
 				if ( JSON.stringify( currentIds ) !== JSON.stringify( incomingIds ) ) {
 					if ( currentImages.length > 0 ) {
 						await this.prisma.templateImage.deleteMany({
-							where	: { templateId : id },
+							where : { templateId : id },
 						});
 					}
 
-					if ( images.length > 0 ) {
-						const imageData	= images.map( ( imageId ) => ({
-							templateId	: id,
-							imageId		: imageId,
-						}));
+					if ( incomingIds.length > 0 ) {
+						const imageData = incomingIds.map( ( imageId ) => ({
+							templateId : id,
+							imageId    : imageId,
+						}) );
 
 						await this.prisma.templateImage.createMany({
-							data: imageData,
+							data : imageData,
 						});
-
-                        template.images = images;
 					}
 				}
 			}
 
-            return transformOneTemplateResponse( template );
+			const updatedTemplate = await this.prisma.template.findUnique({
+				where  : { id },
+				select : SELECT_TEMPLATE
+			});
+
+			return transformOneTemplateResponse( updatedTemplate! );
 		} catch ( error ) {
 			throw PrismaException.catch( error );
 		}
