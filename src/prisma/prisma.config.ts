@@ -1,7 +1,10 @@
 import { defineConfig } from '@prisma/config';
 
+import { ENVS } from '@config/envs';
+
+
 export default defineConfig({
     datasource: {
-        url: process.env.DATABASE_URL,
+        url: ENVS.DATABASE_URL,
     },
 });
