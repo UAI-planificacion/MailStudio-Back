@@ -78,6 +78,7 @@ model TemplateFile {
     id          String @id @default(ulid())
     name        String @unique
     url         String
+    coverUrl    String?
     type        AttachmentType @default(PDF)
 
     creator     Staff     @relation("CreatedTemplateFiles", fields: [createdBy], references: [id])
