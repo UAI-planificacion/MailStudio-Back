@@ -45,7 +45,7 @@ export class CreateTemplateDto {
 
     @IsOptional()
     @IsString( { each: true, message: 'Todos los elementos de images deben ser strings' } )
-    @Length( 26, 26, { each: true, message: 'Cada elemento de images debe ser un ID de imagen válido (26 caracteres)' } )
+    @Length( 26, 50, { each: true, message: 'Cada elemento de images debe ser un ID de imagen válido (26 caracteres)' } )
     @ArrayMaxSize( 20, { message: 'El campo images puede tener un máximo de 20 elementos' } )
     images?: string[];
 
