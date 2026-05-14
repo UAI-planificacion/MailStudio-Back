@@ -27,6 +27,7 @@
             "@send-email-logs/*": ["./src/send-email-logs/*"],
             "@staff/*"          : ["./src/staff/*"],
             "@templates/*"      : ["./src/templates/*"],
+            "@template-files/*" : ["./src/template-files/*"],
             "@services/*"       : ["./src/services/*"],
             "@prisma/*"         : ["./src/prisma/*"],
             "@data/*"           : ["./src/data/*"],
