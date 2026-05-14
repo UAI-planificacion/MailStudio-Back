@@ -7,12 +7,12 @@ import {
 	Param,
 	Delete,
 	Query
-}                           from '@nestjs/common';
+} from '@nestjs/common';
 
-import { PaginationDto }    from '@common/dto/pagination.dto';
-import { TemplatesService }  from '@templates/templates.service';
-import { CreateTemplateDto } from '@templates/dto/create-template.dto';
-import { UpdateTemplateDto } from '@templates/dto/update-template.dto';
+import { PaginationFilterDto }  from '@common/dto/pagination-filter.dto';
+import { TemplatesService }     from '@templates/templates.service';
+import { CreateTemplateDto }    from '@templates/dto/create-template.dto';
+import { UpdateTemplateDto }    from '@templates/dto/update-template.dto';
 
 
 @Controller( 'templates' )
@@ -38,10 +38,9 @@ export class TemplatesController {
     @Get( '/staff/:id' )
 	findAll(
         @Param( 'id' ) id : string,
-		@Query() paginationDto : PaginationDto,
-		@Query( 'name' ) name? : string
+		@Query() paginationFilterDto : PaginationFilterDto,
     ) {
-		return this.templatesService.findAll( id, paginationDto, name );
+		return this.templatesService.findAll( id, paginationFilterDto );
 	}
 
 
