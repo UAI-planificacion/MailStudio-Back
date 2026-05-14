@@ -8,6 +8,10 @@ interface EnvVars {
     ALLOWED_ORIGINS : string;
 
     FILE_MANAGER_URL            : string;
+    FILE_MANAGER_ADMIN          : string;
+    FILE_MANAGER_IMAGE          : string;
+    FILE_MANAGER_VIDEO          : string;
+    FILE_MANAGER_RAW            : string;
     FILE_MANAGER_FOLDER         : string;
     FILE_MANAGER_FORMAT         : string;
     FILE_MANAGER_QUALITY        : number;
@@ -37,6 +41,10 @@ const envsSchema = joi.object({
     ALLOWED_ORIGINS : joi.string().required(),
 
     FILE_MANAGER_URL            : joi.string().required(),
+    FILE_MANAGER_ADMIN          : joi.string().required(),
+    FILE_MANAGER_IMAGE          : joi.string().required(),
+    FILE_MANAGER_VIDEO          : joi.string().required(),
+    FILE_MANAGER_RAW            : joi.string().required(),
     FILE_MANAGER_FOLDER         : joi.string().required(),
     FILE_MANAGER_FORMAT         : joi.string().optional(),
     FILE_MANAGER_QUALITY        : joi.number().optional(),
@@ -77,6 +85,10 @@ export const ENVS = {
 
     FILE_MANAGER : {
         URL         : envVars.FILE_MANAGER_URL,
+        ADMIN       : envVars.FILE_MANAGER_ADMIN,
+        IMAGE       : envVars.FILE_MANAGER_IMAGE,
+        VIDEO       : envVars.FILE_MANAGER_VIDEO,
+        RAW         : envVars.FILE_MANAGER_RAW,
         FOLDER      : envVars.FILE_MANAGER_FOLDER,
         FORMAT      : envVars.FILE_MANAGER_FORMAT,
         QUALITY     : envVars.FILE_MANAGER_QUALITY,
