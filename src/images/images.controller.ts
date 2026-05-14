@@ -7,7 +7,8 @@ import {
     Param, 
     Delete, 
     UseInterceptors, 
-    UploadedFile 
+    UploadedFile,
+    Query
 }                           from '@nestjs/common';
 import { 
     ApiBody, 
@@ -17,10 +18,11 @@ import {
 }                           from '@nestjs/swagger';
 import { FileInterceptor }  from '@nestjs/platform-express';
 
-import { ImagesService }    from '@images/images.service';
-import { CreateImageDto }   from '@images/dto/create-image.dto';
-import { UpdateImageDto }   from '@images/dto/update-image.dto';
-import { ImageParamsDto }   from '@images/dto/image-params.dto';
+import { ImagesService }        from '@images/images.service';
+import { CreateImageDto }       from '@images/dto/create-image.dto';
+import { UpdateImageDto }       from '@images/dto/update-image.dto';
+import { ImageParamsDto }       from '@images/dto/image-params.dto';
+import { PaginationFilterDto }  from '@common/dto/pagination-filter.dto';
 
 
 @ApiTags( 'Images' )
@@ -44,8 +46,10 @@ export class ImagesController {
 
 
     @Get()
-    findAll() {
-        return this.imagesService.findAll();
+    findAll(
+        @Query() paginationFilterDto : PaginationFilterDto
+    ) {
+        return this.imagesService.findAll( paginationFilterDto );
     }
 
 
