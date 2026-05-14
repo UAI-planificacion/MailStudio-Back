@@ -1,9 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 
-import { PrismaService }      from '@prisma/prisma.service';
-import { PrismaException }    from '@prisma/prisma-catch';
-import { UpdateImageDto }     from '@images/dto/update-image.dto';
-import { FileManagerService } from '@services/file-manager.service';
+import { Image, Prisma }        from '@prisma/client';
+import { PrismaService }        from '@prisma/prisma.service';
+import { PrismaException }      from '@prisma/prisma-catch';
+import { UpdateImageDto }       from '@images/dto/update-image.dto';
+import { FileManagerService }   from '@services/file-manager.service';
+import { PaginationFilterDto }  from '@common/dto/pagination-filter.dto';
+import { PaginatedResult }      from '@common/interfaces/paginated-result.interface';
 
 
 @Injectable( )
@@ -32,8 +35,43 @@ export class ImagesService {
 	}
 
 
-	async findAll( ) {
-		return await this.prisma.image.findMany( );
+	async findAll( paginationFilterDto : PaginationFilterDto ) : Promise<PaginatedResult<Image>> {
+		const { page = 1, size = 10, name } = paginationFilterDto;
+
+		const skip  = ( page - 1 ) * size;
+		const take  = size;
+		const where : Prisma.ImageWhereInput = {
+			...( name && {
+				name : {
+					contains : name,
+					mode     : 'insensitive'
+				}
+			})
+		};
+
+		const [ items, total ] = await Promise.all([
+			this.prisma.image.findMany({
+				skip    : skip,
+				take    : take,
+				where   : where,
+				orderBy : {
+					createdAt : 'desc'
+				}
+			}),
+			this.prisma.image.count({ where })
+		]);
+
+		const totalPages = Math.ceil( total / size );
+
+		return {
+			data : items,
+			meta : {
+				total      : total,
+				page       : page,
+				size       : size,
+				totalPages : totalPages,
+			}
+		};
 	}
 
 
