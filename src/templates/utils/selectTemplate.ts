@@ -1,3 +1,6 @@
+import { TemplateResponse } from '@templates/interfaces/template-response.interface';
+
+
 export const SELECT_TEMPLATE = {
     id          : true,
     name        : true,
@@ -8,8 +11,12 @@ export const SELECT_TEMPLATE = {
     bcc         : true,
     active      : true,
     images      : {
-        select: {
-            imageId: true
+        select : {
+            image : {
+                select : {
+                    url : true
+                }
+            }
         }
     },
     creator     : {
@@ -31,19 +38,19 @@ export const SELECT_TEMPLATE = {
 }
 
 
-export function transformTemplateResponse( templates: any[] ): any[] {
+export function transformTemplateResponse( templates : any[] ) : TemplateResponse[] {
     return templates.map( TRANSFORM );
 }
 
 
-export function transformOneTemplateResponse( template: any ): any {
+export function transformOneTemplateResponse( template : any ) : TemplateResponse {
     return TRANSFORM( template )
 }
 
 
-const TRANSFORM = ( template : any ) => ({
+const TRANSFORM = ( template : any ) : TemplateResponse => ({
     ...template,
-    images:  ( template?.images?.length ?? 0 ) > 0
-        ? template.images.map((image : any) => image.imageId)
+    images : ( template?.images?.length ?? 0 ) > 0
+        ? template.images.map( ( image : any ) => image.image.url )
         : [],
 });
