@@ -9,7 +9,7 @@ const validateSlashes = ( path : string ) : string => {
 };
 
 
-const generateUrl = ( path : string ) => `${ validateSlashes( ENVS.IMAGE_UPLOAD_URL ) }${ ENVS.FILE_MANAGER.FOLDER.replace( '|', '/' ) }/${ path }`;
+const generateUrl = ( path : string ) => `${ validateSlashes( ENVS.IMAGE_UPLOAD_URL ) }${ ENVS.FILE_MANAGER.FOLDER.BASE.replace( '|', '/' ) }/${ path }`;
 
 
 export const generateTemplate = (
