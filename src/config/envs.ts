@@ -8,15 +8,24 @@ interface EnvVars {
     ALLOWED_ORIGINS : string;
 
     FILE_MANAGER_URL            : string;
-    FILE_MANAGER_ADMIN          : string;
-    FILE_MANAGER_IMAGE          : string;
-    FILE_MANAGER_VIDEO          : string;
-    FILE_MANAGER_RAW            : string;
-    FILE_MANAGER_FOLDER         : string;
-    FILE_MANAGER_FORMAT         : string;
-    FILE_MANAGER_QUALITY        : number;
-    FILE_MANAGER_MAX_RETRIES    : number;
-    FILE_MANAGER_RETRY_DELAY    : number;
+    FILE_MANAGER_ENDPOINT_ADMIN : string;
+    FILE_MANAGER_ENDPOINT_IMAGE : string;
+    FILE_MANAGER_ENDPOINT_VIDEO : string;
+    FILE_MANAGER_ENDPOINT_RAW   : string;
+
+    FILE_MANAGER_FOLDER             : string;
+    FILE_MANAGER_FOLDER_IMAGE       : string;
+    FILE_MANAGER_FOLDER_IMAGE_RAW   : string;
+    FILE_MANAGER_FOLDER_VIDEO       : string;
+    FILE_MANAGER_FOLDER_PDF         : string;
+    FILE_MANAGER_FOLDER_TXT         : string;
+    FILE_MANAGER_FOLDER_HTML        : string;
+    FILE_MANAGER_FOLDER_OTHER       : string;
+
+    FILE_MANAGER_FORMAT      : string;
+    FILE_MANAGER_QUALITY     : number;
+    FILE_MANAGER_MAX_RETRIES : number;
+    FILE_MANAGER_RETRY_DELAY : number;
 
     PGHOST      : string;
     PGPORT      : number;
@@ -41,15 +50,24 @@ const envsSchema = joi.object({
     ALLOWED_ORIGINS : joi.string().required(),
 
     FILE_MANAGER_URL            : joi.string().required(),
-    FILE_MANAGER_ADMIN          : joi.string().required(),
-    FILE_MANAGER_IMAGE          : joi.string().required(),
-    FILE_MANAGER_VIDEO          : joi.string().required(),
-    FILE_MANAGER_RAW            : joi.string().required(),
-    FILE_MANAGER_FOLDER         : joi.string().required(),
-    FILE_MANAGER_FORMAT         : joi.string().optional(),
-    FILE_MANAGER_QUALITY        : joi.number().optional(),
-    FILE_MANAGER_MAX_RETRIES    : joi.number().optional(),
-    FILE_MANAGER_RETRY_DELAY    : joi.number().optional(),
+    FILE_MANAGER_ENDPOINT_ADMIN : joi.string().required(),
+    FILE_MANAGER_ENDPOINT_IMAGE : joi.string().required(),
+    FILE_MANAGER_ENDPOINT_VIDEO : joi.string().required(),
+    FILE_MANAGER_ENDPOINT_RAW   : joi.string().required(),
+
+    FILE_MANAGER_FOLDER             : joi.string().optional().default( 'uai|mailstudio' ),
+    FILE_MANAGER_FOLDER_IMAGE       : joi.string().optional().default( 'images' ),
+    FILE_MANAGER_FOLDER_IMAGE_RAW   : joi.string().optional().default( 'files|image' ),
+    FILE_MANAGER_FOLDER_VIDEO       : joi.string().optional().default( 'files|video' ),
+    FILE_MANAGER_FOLDER_PDF         : joi.string().optional().default( 'files|pdf' ),
+    FILE_MANAGER_FOLDER_TXT         : joi.string().optional().default( 'files|txt' ),
+    FILE_MANAGER_FOLDER_HTML        : joi.string().optional().default( 'files|html' ),
+    FILE_MANAGER_FOLDER_OTHER       : joi.string().optional().default( 'files|other' ),
+
+    FILE_MANAGER_MAX_RETRIES : joi.number().optional().default( 3 ),
+    FILE_MANAGER_RETRY_DELAY : joi.number().optional().default( 2000 ),
+    FILE_MANAGER_FORMAT      : joi.string().optional().default( 'avif' ),
+    FILE_MANAGER_QUALITY     : joi.number().optional().default( 50 ),
 
     PGHOST      : joi.string().required(),
     PGPORT      : joi.number().required(),
@@ -85,11 +103,22 @@ export const ENVS = {
 
     FILE_MANAGER : {
         URL         : envVars.FILE_MANAGER_URL,
-        ADMIN       : envVars.FILE_MANAGER_ADMIN,
-        IMAGE       : envVars.FILE_MANAGER_IMAGE,
-        VIDEO       : envVars.FILE_MANAGER_VIDEO,
-        RAW         : envVars.FILE_MANAGER_RAW,
-        FOLDER      : envVars.FILE_MANAGER_FOLDER,
+        FOLDER      : {
+            BASE        : envVars.FILE_MANAGER_FOLDER,
+            IMAGE       : envVars.FILE_MANAGER_FOLDER_IMAGE,
+            IMAGE_RAW   : envVars.FILE_MANAGER_FOLDER_IMAGE_RAW,
+            VIDEO       : envVars.FILE_MANAGER_FOLDER_VIDEO,
+            PDF         : envVars.FILE_MANAGER_FOLDER_PDF,
+            TXT         : envVars.FILE_MANAGER_FOLDER_TXT,
+            HTML        : envVars.FILE_MANAGER_FOLDER_HTML,
+            OTHER       : envVars.FILE_MANAGER_FOLDER_OTHER,
+        },
+        ENDPOINT    : {
+            ADMIN       : envVars.FILE_MANAGER_ENDPOINT_ADMIN,
+            IMAGE       : envVars.FILE_MANAGER_ENDPOINT_IMAGE,
+            VIDEO       : envVars.FILE_MANAGER_ENDPOINT_VIDEO,
+            RAW         : envVars.FILE_MANAGER_ENDPOINT_RAW,
+        },
         FORMAT      : envVars.FILE_MANAGER_FORMAT,
         QUALITY     : envVars.FILE_MANAGER_QUALITY,
         MAX_RETRIES : envVars.FILE_MANAGER_MAX_RETRIES,
@@ -100,7 +129,7 @@ export const ENVS = {
         CONNECTION                  : envVars.AZURE_BUS_CONNECTION,
         QUEUE_NAME                  : envVars.AZURE_QUEUE_NAME,
         AZURE_QUEUE_RECURRENCE_NAME : envVars.AZURE_QUEUE_RECURRENCE_NAME,
-        MAX_CONCURRENT_BATCHES          : envVars.MAX_CONCURRENT_BATCHES,
+        MAX_CONCURRENT_BATCHES      : envVars.MAX_CONCURRENT_BATCHES,
     },
 
     IMAGE_UPLOAD_URL: envVars.IMAGE_UPLOAD_URL,
