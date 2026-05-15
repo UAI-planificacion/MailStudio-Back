@@ -1,14 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { PrismaService }          from '@prisma/prisma.service';
-import { PrismaException }        from '@prisma/prisma-catch';
-import { FileManagerService }     from '@services/file-manager.service';
-import { PaginatedResult }        from '@common/interfaces/paginated-result.interface';
 import { Prisma, TemplateFile, AttachmentType } from '@prisma/client';
 
-import { CreateTemplateFileDto }  from './dto/create-template-file.dto';
-import { UpdateTemplateFileDto }  from './dto/update-template-file.dto';
-import { FilterTemplateFileDto }  from './dto/filter-template-file.dto';
+import { PrismaService }            from '@prisma/prisma.service';
+import { PrismaException }          from '@prisma/prisma-catch';
+import { FileManagerService }       from '@services/file-manager.service';
+import { PaginatedResult }          from '@common/interfaces/paginated-result.interface';
+import { CreateTemplateFileDto }    from '@template-files/dto/create-template-file.dto';
+import { UpdateTemplateFileDto }    from '@template-files/dto/update-template-file.dto';
+import { FilterTemplateFileDto }    from '@template-files/dto/filter-template-file.dto';
+import { getLastItem }              from '@common/utils/getLastItem';
 
 
 @Injectable()
@@ -24,36 +25,29 @@ export class TemplateFilesService {
 		try {
 			const { url, coverUrl } = await this.fileManagerService.uploadTemplateFile( file );
 
-			// let type: AttachmentType = AttachmentType.OTHER;
+			let type: AttachmentType = AttachmentType.OTHER;
 
-			// if ( file.mimetype.startsWith( 'image/' )) {
-			// 	type = AttachmentType.IMAGE;
-			// } else if ( file.mimetype.startsWith( 'video/' )) {
-			// 	type = AttachmentType.VIDEO;
-			// } else if ( file.mimetype === 'application/pdf' ) {
-			// 	type = AttachmentType.PDF;
-			// } else if ( file.mimetype === 'text/html' ) {
-			// 	type = AttachmentType.HTML;
-			// } else if ( file.mimetype === 'text/plain' ) {
-			// 	type = AttachmentType.TXT;
-			// }
+			if ( file.mimetype.startsWith( 'image/' )) {
+				type = AttachmentType.IMAGE;
+			} else if ( file.mimetype.startsWith( 'video/' )) {
+				type = AttachmentType.VIDEO;
+			} else if ( file.mimetype === 'application/pdf' ) {
+				type = AttachmentType.PDF;
+			} else if ( file.mimetype === 'text/html' ) {
+				type = AttachmentType.HTML;
+			} else if ( file.mimetype === 'text/plain' ) {
+				type = AttachmentType.TXT;
+			}
 
-            const mimeType = file.mimetype.split( '/' )[ 0 ];
-
-            const type: AttachmentType = {
-                'image'             : AttachmentType.IMAGE,
-                'video'             : AttachmentType.VIDEO,
-                'application/pdf'   : AttachmentType.PDF,
-                'text/html'         : AttachmentType.HTML,
-                'text/plain'        : AttachmentType.TXT,
-            }[ mimeType ] || AttachmentType.OTHER;
+            const finalUrl      = getLastItem( url );
+            const finalCoverUrl = getLastItem( coverUrl );
 
 			return await this.prisma.templateFile.create({
 				data : {
 					name      : createTemplateFileDto.name,
 					type      : type,
-					url       : url,
-					coverUrl  : coverUrl,
+					url       : finalUrl,
+					coverUrl  : finalCoverUrl,
 					createdBy : createTemplateFileDto.createdBy,
 					updatedBy : createTemplateFileDto.createdBy,
 				},
@@ -120,8 +114,6 @@ export class TemplateFilesService {
 
 	async update( id : string, updateTemplateFileDto : UpdateTemplateFileDto ) {
 		try {
-			await this.findOne( id );
-
 			return await this.prisma.templateFile.update({
 				where : { id },
 				data  : updateTemplateFileDto,
