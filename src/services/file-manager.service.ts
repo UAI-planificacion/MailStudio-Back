@@ -1,11 +1,9 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 
-import
-connectRequest, {
-    isApiError
-}                   from '@services/fetch.service';
-import { ENVS }     from '@config/envs';
-import { METHOD }   from '@services/http-codes';
+import { convertToPipe }                from '@common/utils/getLastItem';
+import { ENVS }                         from '@config/envs';
+import connectRequest, { isApiError }   from '@services/fetch.service';
+import { METHOD }                       from '@services/http-codes';
 
 
 interface RespondeFileManager {
@@ -17,15 +15,23 @@ interface RespondeFileManager {
 export class FileManagerService {
 
     private readonly baseUrl        = ENVS.FILE_MANAGER.URL;
-    private readonly folder         = ENVS.FILE_MANAGER.FOLDER;
-    private readonly admin          = ENVS.FILE_MANAGER.ADMIN;
-    private readonly image          = ENVS.FILE_MANAGER.IMAGE;
-    private readonly video          = ENVS.FILE_MANAGER.VIDEO;
-    private readonly raw            = ENVS.FILE_MANAGER.RAW;
-    private readonly MAX_RETRIES    = ENVS.FILE_MANAGER.MAX_RETRIES || 3;
-    private readonly RETRY_DELAY    = ENVS.FILE_MANAGER.RETRY_DELAY || 2000;
-    private readonly FORMAT         = ENVS.FILE_MANAGER.FORMAT      || 'avif';
-    private readonly QUALITY        = ENVS.FILE_MANAGER.QUALITY     || 50;
+    private readonly baseFolder     = ENVS.FILE_MANAGER.FOLDER.BASE;
+    private readonly admin          = `${this.baseUrl}/${ENVS.FILE_MANAGER.ENDPOINT.ADMIN}`;
+    private readonly image          = `${this.baseUrl}/${ENVS.FILE_MANAGER.ENDPOINT.IMAGE}`;
+    private readonly video          = `${this.baseUrl}/${ENVS.FILE_MANAGER.ENDPOINT.VIDEO}`;
+    private readonly raw            = `${this.baseUrl}/${ENVS.FILE_MANAGER.ENDPOINT.RAW}`;
+    private readonly MAX_RETRIES    = ENVS.FILE_MANAGER.MAX_RETRIES;
+    private readonly RETRY_DELAY    = ENVS.FILE_MANAGER.RETRY_DELAY;
+    private readonly FORMAT         = ENVS.FILE_MANAGER.FORMAT;
+    private readonly QUALITY        = ENVS.FILE_MANAGER.QUALITY;
+
+    private readonly IMAGE_FOLDER       = encodeURIComponent( `${ this.baseFolder }|${ ENVS.FILE_MANAGER.FOLDER.IMAGE }` );
+    private readonly IMAGE_RAW_FOLDER   = encodeURIComponent( `${ this.baseFolder }|${ ENVS.FILE_MANAGER.FOLDER.IMAGE_RAW }` );
+    private readonly VIDEO_FOLDER       = encodeURIComponent( `${ this.baseFolder }|${ ENVS.FILE_MANAGER.FOLDER.VIDEO }` );
+    private readonly PDF_FOLDER         = encodeURIComponent( `${ this.baseFolder }|${ ENVS.FILE_MANAGER.FOLDER.PDF }` );
+    private readonly TXT_FOLDER         = encodeURIComponent( `${ this.baseFolder }|${ ENVS.FILE_MANAGER.FOLDER.TXT }` );
+    private readonly HTML_FOLDER        = encodeURIComponent( `${ this.baseFolder }|${ ENVS.FILE_MANAGER.FOLDER.HTML }` );
+    private readonly OTHER_FOLDER       = encodeURIComponent( `${ this.baseFolder }|${ ENVS.FILE_MANAGER.FOLDER.OTHER }` );
 
 
     private async withRetry<T>( operation : () => Promise<T> ) : Promise<T> {
@@ -57,7 +63,7 @@ export class FileManagerService {
             return await this.withRetry( async () => {
                 const formData = new FormData();
                 const blob     = new Blob([ new Uint8Array( file.buffer ) ], { type : file.mimetype });
-                const endpoint = `${ this.baseUrl }/${ this.image }/${ encodeURIComponent( this.folder ) }?format=${ this.FORMAT }&quality=${ this.QUALITY }`;
+                const endpoint = `${ this.image }/${ this.IMAGE_FOLDER }?format=${ this.FORMAT }&quality=${ this.QUALITY }`;
 
                 formData.append( 'file', blob, file.originalname );
 
@@ -83,12 +89,18 @@ export class FileManagerService {
 
                 let endpoint = '';
 
-                if ( file.mimetype.startsWith( 'video/' )) {
-                    endpoint = `${ this.baseUrl }/${ this.video }/upload/${ encodeURIComponent( this.folder ) }?auto=true`;
+                if ( file.mimetype.startsWith( 'image/' )) {
+                    endpoint = `${ this.image }/${ this.IMAGE_RAW_FOLDER }?format=${ this.FORMAT }&quality=${ this.QUALITY }`;
+                } else if ( file.mimetype.startsWith( 'video/' )) {
+                    endpoint = `${ this.video }/${ this.VIDEO_FOLDER }?auto=true`;
                 } else if ( file.mimetype === 'application/pdf' ) {
-                    endpoint = `${ this.baseUrl }/${ this.raw }/upload/${ encodeURIComponent( this.folder ) }?optimize=true&generate_cover=true&format=avif`;
+                    endpoint = `${ this.raw }/${ this.PDF_FOLDER }?optimize=true&generate_cover=true&format=avif`;
+                } else if ( file.mimetype === 'text/html' ) {
+                    endpoint = `${ this.raw }/${ this.HTML_FOLDER }`;
+                } else if ( file.mimetype === 'text/plain' ) {
+                    endpoint = `${ this.raw }/${ this.TXT_FOLDER }`;
                 } else {
-                    endpoint = `${ this.baseUrl }/${ this.raw }/upload/${ encodeURIComponent( this.folder ) }`;
+                    endpoint = `${ this.raw }/${ this.OTHER_FOLDER }`;
                 }
 
                 formData.append( 'file', blob, file.originalname );
@@ -102,7 +114,7 @@ export class FileManagerService {
                 if ( file.mimetype === 'application/pdf' ) {
                     return {
                         url      : response.document.secure_url as string,
-                        coverUrl : response.cover?.secure_url as string,
+                        coverUrl : response.cover?.secure_url   as string,
                     };
                 }
 
@@ -119,9 +131,9 @@ export class FileManagerService {
     async delete( imageUrl : string, resourceType : 'image' | 'video' | 'raw' = 'image' ) : Promise<void> {
         try {
             await this.withRetry( async () => {
-                const fileName   = resourceType === 'raw' ? imageUrl : imageUrl.split( '.' )[0];
-                const deletePath = `${ this.folder }|${ fileName }`;
-                const endpoint   = `${ this.baseUrl }/${ this.admin }/${ deletePath }?resource_type=${ resourceType }`;
+                const fileName   = resourceType === 'raw' ? convertToPipe( imageUrl ) : convertToPipe( imageUrl.split( '.' )[0] );
+                const deletePath = encodeURIComponent( `${ this.baseFolder }|${ fileName }` );
+                const endpoint   = `${ this.admin }/${ deletePath }?resource_type=${ resourceType }`;
 
                 const response = await connectRequest<RespondeFileManager>({
                     endpoint,
