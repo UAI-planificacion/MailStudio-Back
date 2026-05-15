@@ -9,14 +9,18 @@ import {
     Query,
     UseInterceptors,
     UploadedFile
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiConsumes, ApiBody } from '@nestjs/swagger';
+}                           from '@nestjs/common';
+import {
+    ApiTags,
+    ApiConsumes,
+    ApiBody
+}                           from '@nestjs/swagger';
+import { FileInterceptor }  from '@nestjs/platform-express';
 
-import { TemplateFilesService }  from './template-files.service';
-import { CreateTemplateFileDto } from './dto/create-template-file.dto';
-import { UpdateTemplateFileDto } from './dto/update-template-file.dto';
-import { FilterTemplateFileDto } from './dto/filter-template-file.dto';
+import { TemplateFilesService }     from './template-files.service';
+import { CreateTemplateFileDto }    from './dto/create-template-file.dto';
+import { UpdateTemplateFileDto }    from './dto/update-template-file.dto';
+import { FilterTemplateFileDto }    from './dto/filter-template-file.dto';
 
 
 @ApiTags( 'Template Files' )
@@ -30,9 +34,9 @@ export class TemplateFilesController {
     @ApiConsumes( 'multipart/form-data' )
     @ApiBody({ type : CreateTemplateFileDto })
     @UseInterceptors( FileInterceptor( 'file' ))
-	create(
-		@Body() createTemplateFileDto : CreateTemplateFileDto,
-        @UploadedFile( ) file         : Express.Multer.File,
+	upload(
+		@Body() createTemplateFileDto   : CreateTemplateFileDto,
+        @UploadedFile() file            : Express.Multer.File,
 	) {
 		return this.templateFilesService.create( createTemplateFileDto, file );
 	}
