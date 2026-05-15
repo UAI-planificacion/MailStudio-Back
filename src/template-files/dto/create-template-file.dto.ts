@@ -1,12 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { 
-    IsNotEmpty, 
-    IsString, 
-    Length 
-}                      from 'class-validator';
+
+import {
+    IsNotEmpty,
+    IsString,
+    Length
+} from 'class-validator';
+
+import { UploadFileDto } from '@common/dto/upload-file.dto';
 
 
-export class CreateTemplateFileDto {
+export class CreateTemplateFileDto extends UploadFileDto {
 
     @ApiProperty({
         description : 'Nombre del archivo',
