@@ -13,16 +13,15 @@ import {
 import { 
     ApiBody, 
     ApiConsumes, 
-    ApiParam, 
     ApiTags 
 }                           from '@nestjs/swagger';
 import { FileInterceptor }  from '@nestjs/platform-express';
 
 import { ImagesService }        from '@images/images.service';
-import { CreateImageDto }       from '@images/dto/create-image.dto';
 import { UpdateImageDto }       from '@images/dto/update-image.dto';
 import { ImageParamsDto }       from '@images/dto/image-params.dto';
 import { PaginationFilterDto }  from '@common/dto/pagination-filter.dto';
+import { UploadFileDto }        from '@common/dto/upload-file.dto';
 
 
 @ApiTags( 'Images' )
@@ -34,8 +33,7 @@ export class ImagesController {
 
     @Post( ':nameImg' )
     @ApiConsumes( 'multipart/form-data' )
-    @ApiParam({ name : 'nameImg', type : 'string', description : 'Nombre de la imagen' })
-    @ApiBody({ type : CreateImageDto })
+    @ApiBody({ type : UploadFileDto })
     @UseInterceptors( FileInterceptor( 'file' ))
     upload(
         @Param( ) params        : ImageParamsDto,
