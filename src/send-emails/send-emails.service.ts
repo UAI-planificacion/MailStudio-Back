@@ -47,6 +47,9 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
 
 
     async startEmailJob( payload: SendEmailDto ) {
+        // TODO: Ya no será requerido el templateId ahora podrá llegar templateId o templaFileId solo uno de los 2.
+        // ? Hay que traer la info del templateFile si es que viene y enviarlo al worker,
+        // ! Hay que editar el worker para recibe el templateFileId
         const { students, templateId, subject, cc, bcc, priority, staffId } = payload;
 
         const template = await this.prisma.template.findUnique({
