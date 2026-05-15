@@ -7,6 +7,7 @@ import { UpdateImageDto }       from '@images/dto/update-image.dto';
 import { FileManagerService }   from '@services/file-manager.service';
 import { PaginationFilterDto }  from '@common/dto/pagination-filter.dto';
 import { PaginatedResult }      from '@common/interfaces/paginated-result.interface';
+import { getLastItem }          from '@common/utils/getLastItem';
 
 
 @Injectable( )
@@ -21,7 +22,10 @@ export class ImagesService {
 	async create( name : string, file : Express.Multer.File ) {
 		try {
 			const baseUrl   = await this.fileManagerService.upload( file );
-            const url       = baseUrl.split( '/' ).at( -1 ) as string;
+            // TODO: Hay que probar las imágenes
+            const url       = getLastItem( baseUrl );
+            // const url       = baseUrl.split( ENVS.FILE_MANAGER.FOLDER.BASE.replaceAll( '|', '/' ) ).pop()?.slice( 1 )!;
+            // const url       = baseUrl.split( '/' ).at( -1 ) as string;
 
 			return await this.prisma.image.create({
 				data : {
@@ -35,7 +39,9 @@ export class ImagesService {
 	}
 
 
-	async findAll( paginationFilterDto : PaginationFilterDto ) : Promise<PaginatedResult<Image>> {
+	async findAll(
+        paginationFilterDto : PaginationFilterDto
+    ) : Promise<PaginatedResult<Image>> {
 		const { page = 1, size = 10, name } = paginationFilterDto;
 
 		const skip  = ( page - 1 ) * size;
