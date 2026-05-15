@@ -2,7 +2,7 @@ import {
     IsOptional, 
     IsString, 
     Length 
-}               from 'class-validator';
+} from 'class-validator';
 
 
 export class UpdateImageDto {
