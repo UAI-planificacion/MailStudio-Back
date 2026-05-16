@@ -6,6 +6,7 @@ export const SELECT_EMAIL_LOG_SEND = {
     message       : true,
     content       : true,
     templateId    : true,
+    templateFileId: true,
     cc            : true,
     bcc           : true,
     studentEmails : true,
