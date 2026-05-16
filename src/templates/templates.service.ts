@@ -9,14 +9,20 @@ import {
     transformOneTemplateResponse,
     transformTemplateResponse
 }                               from '@templates/utils/selectTemplate';
+import {
+    generateTemplate,
+    generateTemplateFile
+}                               from '@templates/utils/createTemplate';
+import {
+    TemplateResponse,
+    TemplateType
+}                               from '@templates/interfaces/template-response.interface';
 import { PaginationFilterDto }  from '@common/dto/pagination-filter.dto';
 import { PaginatedResult }      from '@common/interfaces/paginated-result.interface';
 import { Prisma }               from '@prisma/client';
 import { PrismaService }        from '@prisma/prisma.service';
 import { CreateTemplateDto }    from '@templates/dto/create-template.dto';
 import { UpdateTemplateDto }    from '@templates/dto/update-template.dto';
-import { TemplateResponse }     from '@templates/interfaces/template-response.interface';
-import { generateTemplate }     from '@templates/utils/createTemplate';
 import { TemplateContent }      from '@templates/utils/templateContent.model';
 
 
@@ -111,9 +117,8 @@ export class TemplatesService {
 		};
 	}
 
-
-	async findTemplate( id : string ) {
-		const template = await this.prisma.template.findUnique({
+    async #getTemplate( id : string ) : Promise<string> {
+        const template = await this.prisma.template.findUnique({
 			where : { id, active : true },
 			select: {
 				content: true
@@ -127,6 +132,36 @@ export class TemplatesService {
         const templateContent : TemplateContent = template.content as any as TemplateContent;
 
 		return generateTemplate( templateContent );
+    }
+
+
+    async #getTemplateFile( id : string ) : Promise<string> {
+        const templateFile = await this.prisma.templateFile.findUnique({
+            where   : { id },
+            select  : {
+                url         : true,
+                coverUrl    : true,
+                type        : true
+            }
+        });
+
+        if ( !templateFile ) {
+            throw new NotFoundException ( `TemplateFile with id ${ id } not found` );
+        }
+
+        return await generateTemplateFile( templateFile );
+    }
+
+
+	async findTemplate( id : string, type : TemplateType ) {
+        switch ( type ) {
+            case TemplateType.TEMPLATE:
+                return await this.#getTemplate( id );
+            case TemplateType.FILE:
+                return await this.#getTemplateFile( id );
+            default:
+                throw new Error( `Invalid template type: ${ type }` );
+        }
 	}
 
 
@@ -134,12 +169,7 @@ export class TemplatesService {
 		const template = await this.prisma.template.findUnique({
 			where   : {
                 id,
-                // active : true
             },
-			// include : {
-			// 	creator : true,
-			// 	updater : true,
-			// },
             select : SELECT_TEMPLATE
 		});
 
@@ -175,7 +205,7 @@ export class TemplatesService {
 
 				const currentIds = currentImages.map( ( ti ) => ti.imageId ).sort();
 
-				if ( JSON.stringify( currentIds ) !== JSON.stringify( incomingIds ) ) {
+				if ( JSON.stringify( currentIds ) !== JSON.stringify( incomingIds )) {
 					if ( currentImages.length > 0 ) {
 						await this.prisma.templateImage.deleteMany({
 							where : { templateId : id },
