@@ -49,18 +49,23 @@ export class SendEmailDto {
     @IsString( { message: 'El campo templateId debe ser un string' } )
     @IsNotEmpty( { message: 'El campo templateId no puede estar vacío' } )
     @Length( 26, 26, { message: 'El campo templateId debe tener 26 caracteres' } )
-    templateId: string;
+    @IsOptional()
+    templateId?: string;
+
+    @IsString( { message: 'El campo templateFileId debe ser un string' } )
+    @IsNotEmpty( { message: 'El campo templateFileId no puede estar vacío' } )
+    @Length( 26, 26, { message: 'El campo templateFileId debe tener 26 caracteres' } )
+    @IsOptional()
+    templateFileId?: string;
 
     @IsString( { message: 'El campo subject debe ser un string' } )
     @IsNotEmpty( { message: 'El campo subject no puede estar vacío' } )
     @Length( 1, 100, { message: 'El campo subject debe tener al menos 1 caracter y maximo 100' } )
     subject: string;
 
-
     @IsEnum( Priority, { message: 'El campo priority debe ser NORMAL o HIGH' } )
     @IsOptional()
     priority?: Priority;
-
 
     @IsOptional()
     @IsString( { each: true, message: 'Todos los elementos de cc deben ser strings' } )
@@ -79,12 +84,15 @@ export class SendEmailDto {
     @Length( 26, 26, { message: 'El campo staffId debe tener 26 caracteres' } )
     @IsNotEmpty( { message: 'El campo staffId no puede estar vacío' } )
     staffId: string;
+
 }
 
 
 export class SendEmailScheduleDto extends SendEmailDto {
+
     @IsString( { message: 'El campo sendAt debe ser un string' } )
     @IsNotEmpty( { message: 'El campo sendAt no puede estar vacío' } )
     @Length( 1, 100, { message: 'El campo sendAt debe tener al menos 1 caracter y maximo 100' } )
     sendAt: string;
+
 }
