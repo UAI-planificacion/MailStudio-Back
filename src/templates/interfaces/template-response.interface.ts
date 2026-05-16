@@ -22,3 +22,9 @@ export interface TemplateResponse {
 	creator   : StaffResponse;
 	updater   : StaffResponse;
 }
+
+
+export enum TemplateType {
+    TEMPLATE = 'template',
+    FILE     = 'file',
+}
