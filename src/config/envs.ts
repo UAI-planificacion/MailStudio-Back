@@ -35,10 +35,11 @@ interface EnvVars {
 
     AZURE_BUS_CONNECTION    : string;
     AZURE_QUEUE_NAME        : string;
-    AZURE_QUEUE_RECURRENCE_NAME        : string;
+    AZURE_QUEUE_RECURRENCE_NAME : string;
 
-
-    IMAGE_UPLOAD_URL: string;
+    IMAGE_CLOUDINARY_URL    : string;
+    VIDEO_CLOUDINARY_URL    : string;
+    RAW_CLOUDINARY_URL      : string;
 
     MAX_CONCURRENT_BATCHES: number;
 }
@@ -79,7 +80,9 @@ const envsSchema = joi.object({
     AZURE_QUEUE_NAME            : joi.string().required(),
     AZURE_QUEUE_RECURRENCE_NAME : joi.string().required(),
 
-    IMAGE_UPLOAD_URL : joi.string().required(),
+    IMAGE_CLOUDINARY_URL    : joi.string().required(),
+    VIDEO_CLOUDINARY_URL    : joi.string().required(),
+    RAW_CLOUDINARY_URL      : joi.string().required(),
 
     MAX_CONCURRENT_BATCHES : joi.number().optional(),
 
@@ -132,5 +135,9 @@ export const ENVS = {
         MAX_CONCURRENT_BATCHES      : envVars.MAX_CONCURRENT_BATCHES,
     },
 
-    IMAGE_UPLOAD_URL: envVars.IMAGE_UPLOAD_URL,
+    CLOUDINARY : {
+        IMAGE_URL   : envVars.IMAGE_CLOUDINARY_URL,
+        VIDEO_URL   : envVars.VIDEO_CLOUDINARY_URL,
+        RAW_URL     : envVars.RAW_CLOUDINARY_URL,
+    }
 }
