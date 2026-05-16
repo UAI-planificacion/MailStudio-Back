@@ -201,7 +201,7 @@ model SendEmailLog {
     status      JobStatus @default(PENDING)
     message     String?
 
-    content     Json
+    content     Json?
 
     template    Template? @relation(fields: [templateId], references: [id])
     templateId  String?
