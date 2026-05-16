@@ -7,12 +7,16 @@ import {
 	Param,
 	Delete,
 	Query
-} from '@nestjs/common';
+}                   from '@nestjs/common';
+import { ApiQuery } from '@nestjs/swagger';
+
 
 import { PaginationFilterDto }  from '@common/dto/pagination-filter.dto';
 import { TemplatesService }     from '@templates/templates.service';
 import { CreateTemplateDto }    from '@templates/dto/create-template.dto';
 import { UpdateTemplateDto }    from '@templates/dto/update-template.dto';
+import { TemplateType }         from '@templates/interfaces/template-response.interface';
+import { TemplateTypeDto }      from '@templates/dto/template-type.dto';
 
 
 @Controller( 'templates' )
@@ -27,11 +31,20 @@ export class TemplatesController {
 		return this.templatesService.create( createTemplateDto );
 	}
 
+
     @Get( '/generated/:id' )
+    @ApiQuery({
+        name: "type",
+        description: "Type of template",
+        enum: TemplateType,
+        required: false,
+        default: TemplateType.TEMPLATE
+    })
 	findGeneratedTemplate(
-        @Param( 'id' ) id : string
+        @Param( 'id' ) id     : string,
+        @Query() templateDto  : TemplateTypeDto,
     ) {
-		return this.templatesService.findTemplate( id );
+		return this.templatesService.findTemplate( id, templateDto.type! );
 	}
 
 
