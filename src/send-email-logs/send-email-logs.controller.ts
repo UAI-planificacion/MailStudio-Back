@@ -7,7 +7,7 @@ import {
 	ParseEnumPipe,
 } from '@nestjs/common';
 
-import { JobStatus }    from '@prisma/client';
+import { JobStatus } from '@prisma/client';
 
 import { PaginationDto }        from '@common/dto/pagination.dto';
 import { SendEmailLogsService } from '@send-email-logs/send-email-logs.service';
