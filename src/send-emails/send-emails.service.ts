@@ -6,7 +6,7 @@ import {
 }                       from '@azure/service-bus';
 import {
     JobStatus,
-    RecurrenceFrequency
+    RecurrenceFrequency,
 }                       from '@prisma/client';
 
 import {
@@ -47,32 +47,50 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
 
 
     async startEmailJob( payload: SendEmailDto ) {
-        // TODO: Ya no será requerido el templateId ahora podrá llegar templateId o templaFileId solo uno de los 2.
-        // ? Hay que traer la info del templateFile si es que viene y enviarlo al worker,
-        // ! Hay que editar el worker para recibe el templateFileId
-        const { students, templateId, subject, cc, bcc, priority, staffId } = payload;
+        const { students, templateId, templateFileId, subject, cc, bcc, priority, staffId } = payload;
 
-        const template = await this.prisma.template.findUnique({
-            where: {
-                id: templateId,
-                active: true
-            },
-            select : {
-                content: true,
-            }
-        });
+        if ( templateId && templateFileId ) {
+            throw new BadRequestException( "No puede enviar templateId y templateFileId al mismo tiempo" );
+        }
 
-        if ( !template ) throw new NotFoundException( "Template no encontrado" );
+        if ( !templateId && !templateFileId ) {
+            throw new BadRequestException( "Debe enviar templateId o templateFileId" );
+        }
+
+        let template: { content: any } | null = null;
+
+        if ( templateId  ) {
+            template = await this.prisma.template.findUnique({
+                where: {
+                    id      : templateId,
+                    active  : true,
+                },
+                select : {
+                    content: true,
+                }
+            });
+
+            if ( !template ) throw new NotFoundException( "Template no encontrado" );
+        } else if ( templateFileId ) {
+            const templateFile = await this.prisma.templateFile.findUnique({
+                where: {
+                    id: templateFileId,
+                },
+            });
+
+            if ( !templateFile ) throw new NotFoundException( "TemplateFile no encontrado" );
+        }
 
         const sendEmailLog = await this.prisma.sendEmailLog.create({
             data: {
                 templateId,
+                templateFileId,
                 subject,
                 staffId,
                 priority,
                 cc              : cc    ?? [],
                 bcc             : bcc   ?? [],
-                content         : template.content!,
+                content         : templateId ? (template as { content: any }).content : undefined,
                 studentEmails   : students.map( s => s.email ),
                 status          : JobStatus.PROCESSING,
             },
@@ -112,7 +130,7 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
 
     // ========================= MASIVOS (inmediatos) =========================
     async sendMassiveEmails( payload: SendEmailDto, sendEmailLogId: string ): Promise<void> {
-        const { students, templateId, subject, cc, bcc, priority } = payload;
+        const { students, templateId, templateFileId, subject, cc, bcc, priority } = payload;
 
         let batch = await this.sender.createMessageBatch();
 
@@ -124,6 +142,7 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
                 body        : {
                     student,
                     templateId,
+                    templateFileId,
                     subject,
                     notificationId: sendEmailLogId,
                     ...( priority   && { priority }),
