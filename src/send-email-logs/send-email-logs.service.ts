@@ -39,11 +39,23 @@ export class SendEmailLogsService {
 
 		const totalPages = Math.ceil( total / size );
 
+        const students = await this.prisma.student.findMany({
+            where: {
+                email: {
+                    in: items.flatMap( ( item ) => item.studentEmails )
+                }
+            },
+            select : { 
+                id: true,
+            }
+        });
+
 		const data = items.map( ( item ) => {
 			if ( !emailDetails ) {
 				return {
 					...item,
-					studentEmails : item.studentEmails.length,
+					studentEmails   : item.studentEmails.length,
+                    studentCount    : students.length
 				};
 			}
 
