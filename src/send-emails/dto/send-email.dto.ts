@@ -6,6 +6,7 @@ import {
     IsEmail,
     IsEnum,
     IsNotEmpty,
+    IsObject,
     IsOptional,
     IsString,
     Length,
@@ -26,6 +27,11 @@ export class StudentDto {
     @Length( 1, 200, { message: 'El campo email debe tener al menos 1 caracter y maximo 200' } )
     @IsEmail( {}, { message: 'El email debe tener un formato válido' } )
     email: string;
+
+    @IsObject( { message: 'El campo customData debe ser un objeto' } )
+    @Type( () => Object )
+    @IsOptional()
+    customData?: Record< string, string >;  
 
 }
 
