@@ -47,7 +47,16 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
 
 
     async startEmailJob( payload: SendEmailDto ) {
-        const { students, templateId, templateFileId, subject, cc, bcc, priority, staffId } = payload;
+        const {
+            students,
+            templateId,
+            templateFileId,
+            subject,
+            cc,
+            bcc,
+            priority,
+            staffId
+        } = payload;
 
         if ( templateId && templateFileId ) {
             throw new BadRequestException( "No puede enviar templateId y templateFileId al mismo tiempo" );
@@ -90,7 +99,7 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
                 priority,
                 cc              : cc    ?? [],
                 bcc             : bcc   ?? [],
-                content         : templateId ? (template as { content: any }).content : undefined,
+                content         : templateId ? ( template as { content: any }).content : undefined,
                 studentEmails   : students.map( s => s.email ),
                 status          : JobStatus.PROCESSING,
             },
