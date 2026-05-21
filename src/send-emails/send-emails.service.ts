@@ -55,7 +55,8 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
             cc,
             bcc,
             priority,
-            staffId
+            staffId,
+            filters
         } = payload;
 
         if ( templateId && templateFileId ) {
@@ -96,6 +97,7 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
                 templateFileId,
                 subject,
                 staffId,
+                filters,
                 priority,
                 cc              : cc    ?? [],
                 bcc             : bcc   ?? [],

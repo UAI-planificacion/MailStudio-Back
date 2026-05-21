@@ -10,6 +10,7 @@ export const SELECT_EMAIL_LOG_SEND = {
     cc            : true,
     bcc           : true,
     studentEmails : true,
+    filters       : true,
     createdAt     : true,
     sender        : {
         select : {

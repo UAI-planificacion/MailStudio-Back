@@ -31,7 +31,7 @@ export class StudentDto {
     @IsObject( { message: 'El campo customData debe ser un objeto' } )
     @Type( () => Object )
     @IsOptional()
-    customData?: Record< string, string >;  
+    customData?: Record<string, string>;
 
 }
 
@@ -90,6 +90,11 @@ export class SendEmailDto {
     @Length( 26, 26, { message: 'El campo staffId debe tener 26 caracteres' } )
     @IsNotEmpty( { message: 'El campo staffId no puede estar vacío' } )
     staffId: string;
+
+
+    @IsObject( { message: 'El campo filters debe ser un objeto' })
+    @IsOptional()
+    filters?: Record<string, string[]>;
 
 }
 
