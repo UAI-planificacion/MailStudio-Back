@@ -202,6 +202,7 @@ model SendEmailLog {
     message     String?
 
     content     Json?
+    filters     Json?
 
     template    Template? @relation(fields: [templateId], references: [id])
     templateId  String?
