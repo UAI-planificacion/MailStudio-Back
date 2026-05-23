@@ -42,6 +42,9 @@ interface EnvVars {
     RAW_CLOUDINARY_URL      : string;
 
     MAX_CONCURRENT_BATCHES: number;
+
+    FRONTEND_URL     : string;
+    PREVIEW_ENDPOINT : string;
 }
 
 
@@ -85,6 +88,9 @@ const envsSchema = joi.object({
     RAW_CLOUDINARY_URL      : joi.string().required(),
 
     MAX_CONCURRENT_BATCHES : joi.number().optional(),
+
+    FRONTEND_URL     : joi.string().required(),
+    PREVIEW_ENDPOINT : joi.string().required(),
 
 })
 .unknown( true );
@@ -139,5 +145,10 @@ export const ENVS = {
         IMAGE_URL   : envVars.IMAGE_CLOUDINARY_URL,
         VIDEO_URL   : envVars.VIDEO_CLOUDINARY_URL,
         RAW_URL     : envVars.RAW_CLOUDINARY_URL,
-    }
+    },
+
+	FRONTEND : {
+		URL              : envVars.FRONTEND_URL,
+		PREVIEW_ENDPOINT : envVars.PREVIEW_ENDPOINT,
+	}
 }
