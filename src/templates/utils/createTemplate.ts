@@ -28,7 +28,36 @@ const GLOBAL_BUTTON = ( externalUrl : string ) => `
 `;
 
 
-const baseTemplate = ( externalUrl : string ) => `
+const extractVariables = ( html : string ) : Record<string, string> => {
+	const variables : Record<string, string> = {};
+	const doubleCurlyRegex   = /\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g;
+	const doubleBracketRegex = /\[\[\s*([a-zA-Z0-9_.-]+)\s*\]\]/g;
+	let match;
+
+	while ( ( match = doubleCurlyRegex.exec( html ) ) !== null ) {
+		const key = match[ 1 ].trim();
+		variables[ key ] = `{{${ key }}}`;
+	}
+
+	while ( ( match = doubleBracketRegex.exec( html ) ) !== null ) {
+		const key = match[ 1 ].trim();
+		variables[ key ] = `[[${ key }]]`;
+	}
+
+	return variables;
+};
+
+
+const buildContextParam = ( variables : Record<string, string> ) : string => {
+	if ( Object.keys( variables ).length === 0 ) {
+		return '';
+	}
+	const pairs = Object.entries( variables ).map( ( [ key, val ] ) => `&quot;${ key }&quot;:&quot;${ val }&quot;` );
+	return `&context={${ pairs.join( ',' ) }}`;
+};
+
+
+const baseTemplate = ( externalUrl : string, showButtonContent : boolean = true ) => `
     <!DOCTYPE html>
     <html lang="es">
     <head>
@@ -38,7 +67,7 @@ const baseTemplate = ( externalUrl : string ) => `
     </head>
     <body style="margin:0;font-family:sans-serif">
         <div style="max-width:800px;margin:0 auto">
-            ${ GLOBAL_BUTTON( externalUrl ) }
+            ${ showButtonContent ? GLOBAL_BUTTON( externalUrl ) : '' }
             ${ REPLACE_BODY }
         </div>
     </body>
@@ -46,7 +75,9 @@ const baseTemplate = ( externalUrl : string ) => `
 
 
 export function generateTemplate(
-	templateContent : TemplateContent
+	templateContent   : TemplateContent,
+	id                : string,
+	showButtonContent : boolean = true
 ) : string {
 	const headerHtml = templateContent.headerImage
 		? `<img src="${ generateUrl( templateContent.headerImage ) }" style="display:block;width:100%" alt="header">`
@@ -56,75 +87,88 @@ export function generateTemplate(
 		? `<img src="${ generateUrl( templateContent.footerImage ) }" style="display:block;width:100%" alt="footer">`
 		: '';
 
-    const content = `
+	const content = `
     ${ headerHtml }
 	<div style="display:block;clear:both;padding:20px 0">
         ${ templateContent.htmlContent }
     </div>
 	${ footerHtml }`;
 
-    return baseTemplate( '' )
-        .replace( REPLACE_BODY, content )
-        .replace( /\r?\n|\r|\s\s+/g, '' )
-        .trim();
+	const vars         = extractVariables( content );
+	const contextParam = buildContextParam( vars );
+	const externalUrl  = `${ ENVS.FRONTEND.URL }/api/${ ENVS.FRONTEND.PREVIEW_ENDPOINT }?id=${ id }&type=template${ contextParam }`;
+
+	return baseTemplate( externalUrl, showButtonContent )
+		.replace( REPLACE_BODY, content )
+		.replace( /\r?\n|\r|\s\s+/g, '' )
+		.trim();
 }
 
 
 interface GenerateTemplateFile {
-    url         : string;
-    coverUrl    : string | null;
-    type        : $Enums.AttachmentType;
+	id       : string;
+	url      : string;
+	coverUrl : string | null;
+	type     : $Enums.AttachmentType;
 }
 
 
-export async function generateTemplateFile( templateFile: GenerateTemplateFile ) : Promise<string> {
-    const { url, coverUrl, type } = templateFile;
+export async function generateTemplateFile(
+	templateFile      : GenerateTemplateFile,
+	showButtonContent : boolean = true
+) : Promise<string> {
+	const { url, coverUrl, type } = templateFile;
 
-    let contentUrl      = '';
-    let coverFullUrl    = '';
+	let contentUrl   = '';
+	let coverFullUrl = '';
 
-    switch ( type ) {
-        case $Enums.AttachmentType.IMAGE:
-            contentUrl = `${ imageURL }/${ url }`;
-        break;
+	switch ( type ) {
+		case $Enums.AttachmentType.IMAGE:
+			contentUrl = `${ imageURL }/${ url }`;
+		break;
 
-        case $Enums.AttachmentType.VIDEO:
-            contentUrl = `${ videoURL }/${ url }`;
-        break;
+		case $Enums.AttachmentType.VIDEO:
+			contentUrl = `${ videoURL }/${ url }`;
+		break;
 
-        case $Enums.AttachmentType.PDF:
-        case $Enums.AttachmentType.TXT:
-        case $Enums.AttachmentType.HTML:
-        case $Enums.AttachmentType.OTHER:
-            contentUrl = `${ rawURL }/${ url }`;
-        break;
-    }
+		case $Enums.AttachmentType.PDF:
+		case $Enums.AttachmentType.TXT:
+		case $Enums.AttachmentType.HTML:
+		case $Enums.AttachmentType.OTHER:
+			contentUrl = `${ rawURL }/${ url }`;
+		break;
+	}
 
-    if ( coverUrl && type === $Enums.AttachmentType.PDF ) {
-        coverFullUrl = `${ imageURL }/${ coverUrl }`;
-    }
+	if ( coverUrl && type === $Enums.AttachmentType.PDF ) {
+		coverFullUrl = `${ imageURL }/${ coverUrl }`;
+	}
 
-    const content = {
-        [ $Enums.AttachmentType.IMAGE ] : `<img src="${ contentUrl }" style="display:block;width:100%" alt="Image content">`,
-        [ $Enums.AttachmentType.VIDEO ] : `<video src="${ contentUrl }" controls style="display:block;width:100%"></video>`,
-        [ $Enums.AttachmentType.PDF ]   : coverFullUrl ? `<img src="${ coverFullUrl }" style="display:block;width:100%" alt="PDF cover">` : '',
-        [ $Enums.AttachmentType.TXT ]   : `<div style="display:block;padding:10px 0">${ ( await getContent( contentUrl ) ).replace( /\r?\n|\r/g, '<br>' ) }</div>`,
-        [ $Enums.AttachmentType.HTML ]  : await getContent( contentUrl ),
-        [ $Enums.AttachmentType.OTHER ] : '',
-    }[ type ] || '';
+	const content = {
+		[ $Enums.AttachmentType.IMAGE ] : `<img src="${ contentUrl }" style="display:block;width:100%" alt="Image content">`,
+		[ $Enums.AttachmentType.VIDEO ] : `<video src="${ contentUrl }" controls style="display:block;width:100%"></video>`,
+		[ $Enums.AttachmentType.PDF ]   : coverFullUrl ? `<img src="${ coverFullUrl }" style="display:block;width:100%" alt="PDF cover">` : '',
+		[ $Enums.AttachmentType.TXT ]   : `<div style="display:block;padding:10px 0">${ ( await getContent( contentUrl ) ).replace( /\r?\n|\r/g, '<br>' ) }</div>`,
+		[ $Enums.AttachmentType.HTML ]  : await getContent( contentUrl ),
+		[ $Enums.AttachmentType.OTHER ] : '',
+	}[ type ] || '';
 
-    return baseTemplate( type === $Enums.AttachmentType.HTML ? '' : contentUrl )
-        .replace( REPLACE_BODY, content )
-        .replace( /\r?\n|\r|\s\s+/g, '' )
-        .trim();
-};
+	const vars         = extractVariables( content );
+	const contextParam = buildContextParam( vars );
+	const externalUrl  = `${ ENVS.FRONTEND.URL }/api/${ ENVS.FRONTEND.PREVIEW_ENDPOINT }?id=${ templateFile.id }&type=file${ contextParam }`;
+
+	return baseTemplate( externalUrl, showButtonContent )
+		.replace( REPLACE_BODY, content )
+		.replace( /\r?\n|\r|\s\s+/g, '' )
+		.trim();
+}
 
 
 async function getContent( url: string ) : Promise<string> {
-    try {
-        const response = await fetch( url );
-        return await response.text();
-    } catch ( error ) {
-        return `<p>Error al cargar el contenido.</p>`;
-    }
+	try {
+		const response = await fetch( url );
+		return await response.text();
+	} catch ( error ) {
+		return `<p>Error al cargar el contenido.</p>`;
+	}
 }
+
