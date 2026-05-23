@@ -117,11 +117,12 @@ export class TemplatesService {
 		};
 	}
 
-    async #getTemplate( id : string ) : Promise<string> {
+    async #getTemplate( id : string, showButtonContent : boolean = true ) : Promise<string> {
         const template = await this.prisma.template.findUnique({
 			where : { id, active : true },
 			select: {
-				content: true
+				id      : true,
+				content : true
 			},
 		});
 
@@ -131,17 +132,18 @@ export class TemplatesService {
 
         const templateContent : TemplateContent = template.content as any as TemplateContent;
 
-		return generateTemplate( templateContent );
+		return generateTemplate( templateContent, template.id, showButtonContent );
     }
 
 
-    async #getTemplateFile( id : string ) : Promise<string> {
+    async #getTemplateFile( id : string, showButtonContent : boolean = true ) : Promise<string> {
         const templateFile = await this.prisma.templateFile.findUnique({
             where   : { id },
             select  : {
-                url         : true,
-                coverUrl    : true,
-                type        : true
+				id       : true,
+                url      : true,
+                coverUrl : true,
+                type     : true
             }
         });
 
@@ -149,16 +151,16 @@ export class TemplatesService {
             throw new NotFoundException ( `TemplateFile with id ${ id } not found` );
         }
 
-        return await generateTemplateFile( templateFile );
+        return await generateTemplateFile( templateFile, showButtonContent );
     }
 
 
-	async findTemplate( id : string, type : TemplateType ) {
+	async findTemplate( id : string, type : TemplateType, showButtonContent : boolean = true ) {
         switch ( type ) {
             case TemplateType.TEMPLATE:
-                return await this.#getTemplate( id );
+                return await this.#getTemplate( id, showButtonContent );
             case TemplateType.FILE:
-                return await this.#getTemplateFile( id );
+                return await this.#getTemplateFile( id, showButtonContent );
             default:
                 throw new Error( `Invalid template type: ${ type }` );
         }
