@@ -44,7 +44,7 @@ export class TemplatesController {
         @Param( 'id' ) id     : string,
         @Query() templateDto  : TemplateTypeDto,
     ) {
-		return this.templatesService.findTemplate( id, templateDto.type! );
+		return this.templatesService.findTemplate( id, templateDto.type!, templateDto.showButtonContent ?? true );
 	}
 
 
