@@ -18,6 +18,8 @@ import { PrismaService }            from '@prisma/prisma.service';
 import { SendEmailDto }             from '@send-emails/dto/send-email.dto';
 import { SendEmailWorkflowDto }     from '@send-emails/dto/send-email-workflow.dto';
 import { SELECT_EMAIL_LOG_SEND }    from '@send-email-logs/utils/select';
+import { SseService }               from '@sse/sse.service';
+import { EnumAction, Entity }       from '@sse/sse.model';
 
 
 @Injectable()
@@ -29,6 +31,7 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
 
     constructor(
         private readonly prisma: PrismaService,
+        private readonly sseService: SseService,
     ) { }
 
 
@@ -110,26 +113,40 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
 
         this.sendMassiveEmails( payload, sendEmailLog.id )
             .then( async () => {
-                await this.prisma.sendEmailLog.update({
+                const sendEmail = await this.prisma.sendEmailLog.update({
                     where: {
                         id: sendEmailLog.id
                     },
                     data: {
                         status: JobStatus.COMPLETED
-                    }
+                    },
+                    select : SELECT_EMAIL_LOG_SEND
                 });
+
+				this.sseService.emitEvent({
+					message : sendEmail,
+					action  : EnumAction.UPDATE,
+					entity  : Entity.EMAIL_LOG,
+				});
             })
             .catch( async ( err ) => {
-                await this.prisma.sendEmailLog.update({
+                const sendEmail = await this.prisma.sendEmailLog.update({
                     where: {
                         id: sendEmailLog.id
                     },
                     data: {
                         status  : JobStatus.FAILED,
                         message : err.message ?? "Error desconocido"
-                    }
+                    },
+                    select: SELECT_EMAIL_LOG_SEND
                 });
-            })
+
+				this.sseService.emitEvent({
+					message : sendEmail,
+					action  : EnumAction.UPDATE,
+					entity  : Entity.EMAIL_LOG,
+				});
+            });
 
         return {
             message     : "Proceso de envío programado exitosamente",
