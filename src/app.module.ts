@@ -12,6 +12,7 @@ import { SendEmailLogsModule }  from '@send-email-logs/send-email-logs.module';
 import { WorkflowModule }       from '@workflow/workflow.module';
 import { SeedModule }           from '@seed/seed.module';
 import { DataModule }           from '@data/data.module';
+import { SseModule }            from '@sse/sse.module';
 
 
 @Module({
@@ -27,6 +28,7 @@ import { DataModule }           from '@data/data.module';
         StaffModule,
         SeedModule,
         DataModule,
+        SseModule,
     ],
     controllers : [ AppController ],
 })
