@@ -5,10 +5,16 @@
         "Name": "sbemulatorns",
         "Queues": [
           {
-            "Name": "mailstudio-local"
+            "Name": "mailstudio-emails"
+          },
+          {
+            "Name": "recurrent-queue"
           }
         ]
       }
-    ]
+    ],
+    "Logging": {
+      "Type": "File"
+    }
   }
 }
