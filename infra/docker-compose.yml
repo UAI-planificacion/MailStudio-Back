@@ -16,14 +16,13 @@ services:
     container_name: service-bus-emulator
     ports:
       - "5672:5672" # Puerto AMQP para enviar mensajes
+      - "5300:5300" # Puerto HTTP para administración/configuración
     environment:
       SQL_SERVER: "mssql"
       # MSSQL_SA_PASSWORD: ${LOCAL_BUS_EMULATOR_PASSWORD}
       MSSQL_SA_PASSWORD: "Password12345!"
       ACCEPT_EULA: "Y"
     volumes:
-      # Montamos el config.json en la ruta que espera el emulador
-      # - D:/GitHub/MailStudio-Back/infra/config.json:/apps/ServiceBus_Emulator/Config/Config.json
-      - D:/GitHub/MailStudio-Back/infra:/apps/ServiceBus_Emulator/Config
+      - ./Config.json:/ServiceBus_Emulator/ConfigFiles/Config.json
     depends_on:
       - mssql
