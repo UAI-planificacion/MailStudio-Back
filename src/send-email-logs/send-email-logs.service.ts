@@ -5,12 +5,37 @@ import { PrismaService }            from '@prisma/prisma.service';
 import { PaginationDto }            from '@common/dto/pagination.dto';
 import { PaginatedResult }          from '@common/interfaces/paginated-result.interface';
 import { SELECT_EMAIL_LOG_SEND }    from '@send-email-logs/utils/select';
+import { SseService }               from '@sse/sse.service';
+import { EnumAction, Entity }       from '@sse/sse.model';
 
 
 @Injectable()
 export class SendEmailLogsService {
 
-	constructor( private readonly prisma: PrismaService ) {}
+	constructor(
+		private readonly prisma: PrismaService,
+		private readonly sseService: SseService,
+	) {}
+
+
+	async updateStatus( id: string, status: JobStatus, message?: string ) {
+		const updatedLog = await this.prisma.sendEmailLog.update( {
+			where : { id },
+			data  : {
+				status  : status,
+				message : message,
+			},
+			select : SELECT_EMAIL_LOG_SEND,
+		} );
+
+		this.sseService.emitEvent( {
+			message : updatedLog,
+			action  : EnumAction.UPDATE,
+			entity  : Entity.EMAIL_LOG,
+		});
+
+		return updatedLog;
+	}
 
 
 	async findAll(
