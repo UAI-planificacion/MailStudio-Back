@@ -36,7 +36,9 @@ export class WorkflowController {
 
 
     @Post()
-    async create( @Body() createWorkflowDto: SendEmailWorkflowDto ) {
+    async create(
+        @Body() createWorkflowDto: SendEmailWorkflowDto
+    ) {
         return await this.workflowService.create( createWorkflowDto );
     }
 
