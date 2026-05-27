@@ -210,22 +210,43 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
     // ========================= WORKFLOW (programado / recurrente) =========================
     async startEmailWorkflow( payload: SendEmailWorkflowDto ) {
         const {
-            name, description, templateId, subject, cc, bcc,
+            name, description, templateId, templateFileId, subject, cc, bcc,
             students, createdBy, frequency, date,
             hour, minute, interval, daysOfWeek, dayOfMonth, monthOfYear,
             lastDayOfMonth, occurrences, repeatUntil, neverEnds,
         } = payload;
 
-        // 1. Validar template
-        const template = await this.prisma.template.findUnique({
-            where  : { id: templateId, active: true },
-            select : { content: true, name: true },
-        });
+        if ( templateId && templateFileId ) {
+            throw new BadRequestException( "No puede enviar templateId y templateFileId al mismo tiempo" );
+        }
 
-        if ( !template ) throw new NotFoundException( "Template no encontrado" );
+        if ( !templateId && !templateFileId ) {
+            throw new BadRequestException( "Debe enviar templateId o templateFileId" );
+        }
 
-        // 2. Resolver subject: del DTO o fallback al template
-        const resolvedSubject = subject ?? template.name;
+        let resolvedSubject: string | null | undefined = subject;
+        let templateContent: any           = undefined;
+
+        if ( templateId ) {
+            const template = await this.prisma.template.findUnique( {
+                where  : { id: templateId, active: true },
+                select : { content: true, name: true },
+            } );
+
+            if ( !template ) throw new NotFoundException( "Template no encontrado" );
+
+            resolvedSubject = subject ?? template.name;
+            templateContent = template.content;
+        } else if ( templateFileId ) {
+            const templateFile = await this.prisma.templateFile.findUnique( {
+                where  : { id: templateFileId },
+                select : { name: true }
+            } );
+
+            if ( !templateFile ) throw new NotFoundException( "TemplateFile no encontrado" );
+
+            resolvedSubject = subject ?? templateFile.name;
+        }
 
         if ( !resolvedSubject ) {
             throw new BadRequestException( "Se requiere un asunto. Provéelo en el payload o en el template." );
@@ -241,45 +262,47 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
         }
 
         // 5. Crear Workflow en DB
-        const workflow = await this.prisma.workflow.create({
-            data: {
-                name,
-                description,
+        const workflow = await this.prisma.workflow.create( {
+            data : {
+                name            : name,
+                description     : description,
                 subject         : resolvedSubject,
                 cc              : cc  ?? [],
                 bcc             : bcc ?? [],
-                templateId,
-                students        : students.map( s => ({ email: s.email, name: s.name }) ),
+                templateId      : templateId,
+                templateFileId  : templateFileId,
+                students        : students.map( s => ( { email: s.email, name: s.name } ) ),
                 date            : isOnce ? date : null,
                 frequency       : resolvedFrequency,
-                interval,
+                interval        : interval,
                 daysOfWeek      : daysOfWeek    ?? [],
-                dayOfMonth,
-                monthOfYear,
-                hour,
-                minute,
+                dayOfMonth      : dayOfMonth,
+                monthOfYear     : monthOfYear,
+                hour            : hour,
+                minute          : minute,
                 lastDayOfMonth  : lastDayOfMonth ?? false,
-                occurrences,
-                repeatUntil,
+                occurrences     : occurrences,
+                repeatUntil     : repeatUntil,
                 neverEnds       : isOnce ? false : ( neverEnds ?? false ),
-                createdBy,
+                createdBy       : createdBy,
             },
         });
 
         // 6. Crear SendEmailLog (PENDING) vinculado al Workflow
-        const sendEmailLog = await this.prisma.sendEmailLog.create({
-            data: {
-                templateId,
-                subject         : resolvedSubject,
-                staffId         : createdBy,
-                cc              : cc  ?? [],
-                bcc             : bcc ?? [],
-                content         : template.content!,
-                studentEmails   : students.map( s => s.email ),
-                status          : JobStatus.PENDING,
-                workflowId      : workflow.id,
+        const sendEmailLog = await this.prisma.sendEmailLog.create( {
+            data : {
+                templateId     : templateId,
+                templateFileId : templateFileId,
+                subject        : resolvedSubject,
+                staffId        : createdBy,
+                cc             : cc  ?? [],
+                bcc            : bcc ?? [],
+                content        : templateContent,
+                studentEmails  : students.map( s => s.email ),
+                status         : JobStatus.PENDING,
+                workflowId     : workflow.id,
             },
-            select: SELECT_EMAIL_LOG_SEND,
+            select : SELECT_EMAIL_LOG_SEND,
         });
 
         // 7. Calcular fecha de primera ejecución y programar en Service Bus
