@@ -2,15 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { Prisma, JobStatus, Workflow } from '@prisma/client';
 
-import { PaginatedResult }          from '@common/interfaces/paginated-result.interface';
-
-import { PrismaService }            from '@prisma/prisma.service';
-import { SELECT_EMAIL_LOG_SEND }    from '@send-email-logs/utils/select';
-import { UpdateWorkflowDto }        from '@workflow/dto/update-workflow.dto';
-import { StudentDto }               from '@send-emails/dto/send-email.dto';
-import { SendEmailWorkflowDto }     from '@send-emails/dto/send-email-workflow.dto';
-import { WorkflowValidationService } from '@common/service/workflow';
-import { FindAllWorkflowDto }        from './dto/find-all-workflow.dto';
+import { PaginatedResult }              from '@common/interfaces/paginated-result.interface';
+import { WorkflowValidationService }    from '@common/service/workflow';
+import { PrismaService }                from '@prisma/prisma.service';
+import { SELECT_EMAIL_LOG_SEND }        from '@send-email-logs/utils/select';
+import { StudentDto }                   from '@send-emails/dto/send-email.dto';
+import { SendEmailWorkflowDto }         from '@send-emails/dto/send-email-workflow.dto';
+import { UpdateWorkflowDto }            from '@workflow/dto/update-workflow.dto';
+import { FindAllWorkflowDto }           from '@workflow/dto/find-all-workflow.dto';
 
 
 @Injectable()
@@ -64,13 +63,31 @@ export class WorkflowService {
     async findOne( id: string ) {
         const workflow = await this.prisma.workflow.findUnique({
             where: { id },
-            include: {
-                template: {
+            select : {
+                id              : true,
+                name            : true,
+                active          : true,
+                students        : true,
+                subject         : true,
+                bcc             : true,
+                cc              : true,
+                frequency       : true,
+                hour            : true,
+                minute          : true,
+                daysOfWeek      : true,
+                dayOfMonth      : true,
+                lastDayOfMonth  : true,
+                occurrences     : true,
+                repeatUntil     : true,
+                neverEnds       : true,
+                templateFileId  : true,
+                filters         : true,
+                template        : {
                     select: {
                         id      : true,
                         content : true,
                     }
-                }
+                },
             }
         });
 
@@ -184,20 +201,21 @@ export class WorkflowService {
         const students      = workflow.students as { email: string; name?: string }[];
         const studentEmails = students.map( s => s.email );
 
-        const sendEmailLog = await this.prisma.sendEmailLog.create({
-            data: {
-                templateId    : workflow.templateId,
-                subject       : workflow.subject ?? "",
-                staffId       : workflow.createdBy,
-                cc            : workflow.cc,
-                bcc           : workflow.bcc,
-                content       : workflow.template.content!,
-                studentEmails,
-                status        : JobStatus.PENDING,
-                workflowId,
+        const sendEmailLog = await this.prisma.sendEmailLog.create( {
+            data : {
+                templateId     : workflow.templateId,
+                templateFileId : workflow.templateFileId,
+                subject        : workflow.subject ?? "",
+                staffId        : workflow.createdBy,
+                cc             : workflow.cc,
+                bcc            : workflow.bcc,
+                content        : workflow.template?.content ?? {},
+                studentEmails  : studentEmails,
+                status         : JobStatus.PENDING,
+                workflowId     : workflowId,
             },
-            select: SELECT_EMAIL_LOG_SEND,
-        });
+            select : SELECT_EMAIL_LOG_SEND,
+        } );
 
         return {
             shouldStop     : false,
