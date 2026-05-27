@@ -9,7 +9,8 @@ import { UpdateWorkflowDto }    from '@workflow/dto/update-workflow.dto';
 @Injectable()
 export class WorkflowValidationService {
 
-    #frecuencyDaily( workflow: SendEmailWorkflowDto | UpdateWorkflowDto ): void {
+    #frecuencyDaily( workflow: SendEmailWorkflowDto ): void {
+    // #frecuencyDaily( workflow: SendEmailWorkflowDto | UpdateWorkflowDto ): void {
         if ( 
             ( workflow.daysOfWeek && workflow.daysOfWeek.length > 0 ) || 
             workflow.dayOfMonth || 
@@ -21,7 +22,8 @@ export class WorkflowValidationService {
     }
 
 
-    #frecuencyWeekly( workflow: SendEmailWorkflowDto | UpdateWorkflowDto ): void {
+    // #frecuencyWeekly( workflow: SendEmailWorkflowDto | UpdateWorkflowDto ): void {
+    #frecuencyWeekly( workflow: SendEmailWorkflowDto ): void {
         if ( workflow.dayOfMonth || workflow.monthOfYear || workflow.lastDayOfMonth ) {
             throw new BadRequestException( 'Para frecuencia SEMANAL, no envíe dayOfMonth, monthOfYear ni lastDayOfMonth.' );
         }
@@ -32,7 +34,8 @@ export class WorkflowValidationService {
     }
 
 
-    #frecuencyMonthly( workflow: SendEmailWorkflowDto | UpdateWorkflowDto ): void {
+    // #frecuencyMonthly( workflow: SendEmailWorkflowDto | UpdateWorkflowDto ): void {
+    #frecuencyMonthly( workflow: SendEmailWorkflowDto ): void {
         if (( workflow.daysOfWeek && workflow.daysOfWeek.length > 0 ) || workflow.monthOfYear ) {
             throw new BadRequestException( 'Para frecuencia MENSUAL, no envíe daysOfWeek ni monthOfYear.' );
         }
@@ -47,7 +50,8 @@ export class WorkflowValidationService {
     }
 
 
-    #frecuencyYearly( workflow: SendEmailWorkflowDto | UpdateWorkflowDto ): void {
+    // #frecuencyYearly( workflow: SendEmailWorkflowDto | UpdateWorkflowDto ): void {
+    #frecuencyYearly( workflow: SendEmailWorkflowDto ): void {
         if (( workflow.daysOfWeek && workflow.daysOfWeek.length > 0 ) || workflow.lastDayOfMonth ) {
             throw new BadRequestException( 'Para frecuencia ANUAL, no envíe daysOfWeek ni lastDayOfMonth.' );
         }
@@ -58,7 +62,8 @@ export class WorkflowValidationService {
     }
 
 
-    #frecuencyOnce( workflow: SendEmailWorkflowDto | UpdateWorkflowDto ): void {
+    // #frecuencyOnce( workflow: SendEmailWorkflowDto | UpdateWorkflowDto ): void {
+    #frecuencyOnce( workflow: SendEmailWorkflowDto ): void {
         if ( !workflow.date ) {
             throw new BadRequestException( 'Para ejecución ÚNICA (ONCE), debe especificar la fecha (date).' );
         }
@@ -79,7 +84,8 @@ export class WorkflowValidationService {
     }
 
 
-    validate( workflow: SendEmailWorkflowDto | UpdateWorkflowDto ): void {
+    // validate( workflow: SendEmailWorkflowDto | UpdateWorkflowDto ): void {
+    validate( workflow: SendEmailWorkflowDto ): void {
         // 1. Validar condiciones de finalización (occurrences, repeatUntil, neverEnds)
         // Solo puede venir UNO de los 3.
         let endConditionsCount = 0;
