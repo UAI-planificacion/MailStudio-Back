@@ -5,6 +5,9 @@ import {
 	DefaultValuePipe,
 	ParseBoolPipe,
 	ParseEnumPipe,
+	Param,
+	Body,
+	Patch,
 } from '@nestjs/common';
 
 import { JobStatus } from '@prisma/client';
@@ -19,6 +22,16 @@ export class SendEmailLogsController {
 	constructor(
 		private readonly sendEmailLogsService : SendEmailLogsService
 	) {}
+
+
+	@Patch( ':id/status' )
+	async updateStatus(
+		@Param( 'id' ) id: string,
+		@Body( 'status', new ParseEnumPipe( JobStatus ) ) status: JobStatus,
+		@Body( 'message' ) message?: string,
+	) {
+		return this.sendEmailLogsService.updateStatus( id, status, message );
+	}
 
 
 	@Get()
