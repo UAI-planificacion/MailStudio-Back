@@ -51,10 +51,16 @@ export class SendEmailWorkflowDto {
     @IsOptional()
     bcc?: string[];
 
-    @IsString({ message: 'El ID de la plantilla debe ser texto' })
-    @IsNotEmpty({ message: 'El ID de la plantilla es requerido' })
+    @IsString( { message: 'El ID de la plantilla debe ser texto' } )
+    @IsOptional()
     @Length( 26, 26, { message: 'El ID de la plantilla debe tener 26 caracteres' } )
-    templateId: string;
+    templateId?: string;
+
+    @IsString( { message: 'El ID de la plantilla de archivo debe ser texto' } )
+    @IsOptional()
+    @Length( 26, 26, { message: 'El ID de la plantilla de archivo debe tener 26 caracteres' } )
+    templateFileId?: string;
+
 
     @IsDateString({}, { message: 'La fecha debe ser una fecha válida' })
     @IsOptional()
