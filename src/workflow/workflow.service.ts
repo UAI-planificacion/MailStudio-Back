@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { Prisma, JobStatus, Workflow } from '@prisma/client';
+import { Prisma, JobStatus } from '@prisma/client';
 
 import { PaginatedResult }              from '@common/interfaces/paginated-result.interface';
 import { WorkflowValidationService }    from '@common/service/workflow';
@@ -10,6 +10,7 @@ import { StudentDto }                   from '@send-emails/dto/send-email.dto';
 import { SendEmailWorkflowDto }         from '@send-emails/dto/send-email-workflow.dto';
 import { UpdateWorkflowDto }            from '@workflow/dto/update-workflow.dto';
 import { FindAllWorkflowDto }           from '@workflow/dto/find-all-workflow.dto';
+import { SELECT_WORKFLOW }              from './utils/select';
 
 
 @Injectable()
@@ -28,7 +29,7 @@ export class WorkflowService {
     ) {}
 
 
-    async findAll( query: FindAllWorkflowDto ): Promise<PaginatedResult<Workflow>> {
+    async findAll( query: FindAllWorkflowDto ): Promise<PaginatedResult<any>> {
         const { page = 1, size = 10, name, frequency, createdBy, active } = query;
 
         const where: Prisma.WorkflowWhereInput = {
@@ -45,6 +46,7 @@ export class WorkflowService {
                 skip    : ( page - 1 ) * size,
                 take    : size,
                 orderBy : { createdAt: 'desc' },
+                select  : SELECT_WORKFLOW
             }),
         ]);
 
@@ -63,33 +65,8 @@ export class WorkflowService {
     async findOne( id: string ) {
         const workflow = await this.prisma.workflow.findUnique({
             where: { id },
-            select : {
-                id              : true,
-                name            : true,
-                active          : true,
-                students        : true,
-                subject         : true,
-                bcc             : true,
-                cc              : true,
-                frequency       : true,
-                hour            : true,
-                minute          : true,
-                daysOfWeek      : true,
-                dayOfMonth      : true,
-                lastDayOfMonth  : true,
-                occurrences     : true,
-                repeatUntil     : true,
-                neverEnds       : true,
-                templateFileId  : true,
-                filters         : true,
-                template        : {
-                    select: {
-                        id      : true,
-                        content : true,
-                    }
-                },
-            }
-        });
+            select : SELECT_WORKFLOW
+        })
 
         if ( !workflow ) throw new NotFoundException( "Workflow no encontrado" );
 
@@ -104,24 +81,26 @@ export class WorkflowService {
             data : {
                 ...createWorkflowDto,
                 students : this.#studentsToJson( createWorkflowDto.students ),
-            }
+            },
+            select : SELECT_WORKFLOW
         });
     }
 
 
     async update( id: string, updateWorkflowDto: UpdateWorkflowDto ) {
-        this.workflowValidationService.validate( updateWorkflowDto );
+        // this.workflowValidationService.validate( updateWorkflowDto );
 
-        await this.findOne( id );
+        // await this.findOne( id );
 
         return await this.prisma.workflow.update({
             where : { id },
             data  : {
                 ...updateWorkflowDto,
-                students : updateWorkflowDto.students
-                    ? this.#studentsToJson( updateWorkflowDto.students )
-                    : undefined,
-            }
+                // students : updateWorkflowDto.students
+                    // ? this.#studentsToJson( updateWorkflowDto.students )
+                    // : undefined,
+            },
+            select: SELECT_WORKFLOW
         });
     }
 
@@ -203,16 +182,17 @@ export class WorkflowService {
 
         const sendEmailLog = await this.prisma.sendEmailLog.create( {
             data : {
-                templateId     : workflow.templateId,
-                templateFileId : workflow.templateFileId,
-                subject        : workflow.subject ?? "",
-                staffId        : workflow.createdBy,
-                cc             : workflow.cc,
-                bcc            : workflow.bcc,
-                content        : workflow.template?.content ?? {},
-                studentEmails  : studentEmails,
-                status         : JobStatus.PENDING,
-                workflowId     : workflowId,
+                templateId      : workflow.templateId,
+                templateFileId  : workflow.templateFileId,
+                subject         : workflow.subject ?? "",
+                staffId         : workflow.createdBy,
+                cc              : workflow.cc,
+                bcc             : workflow.bcc,
+                content         : workflow.template?.content ?? {},
+                studentEmails   : studentEmails,
+                status          : JobStatus.PENDING,
+                workflowId      : workflowId,
+                filters         : workflow.filters ?? []
             },
             select : SELECT_EMAIL_LOG_SEND,
         } );
