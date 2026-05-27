@@ -20,6 +20,7 @@ import { SendEmailWorkflowDto }     from '@send-emails/dto/send-email-workflow.d
 import { SELECT_EMAIL_LOG_SEND }    from '@send-email-logs/utils/select';
 import { SseService }               from '@sse/sse.service';
 import { EnumAction, Entity }       from '@sse/sse.model';
+import { SELECT_WORKFLOW }          from '@workflow/utils/select';
 
 
 @Injectable()
@@ -213,7 +214,7 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
             name, description, templateId, templateFileId, subject, cc, bcc,
             students, createdBy, frequency, date,
             hour, minute, interval, daysOfWeek, dayOfMonth, monthOfYear,
-            lastDayOfMonth, occurrences, repeatUntil, neverEnds,
+            lastDayOfMonth, occurrences, repeatUntil, neverEnds, filters
         } = payload;
 
         if ( templateId && templateFileId ) {
@@ -231,7 +232,7 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
             const template = await this.prisma.template.findUnique( {
                 where  : { id: templateId, active: true },
                 select : { content: true, name: true },
-            } );
+            });
 
             if ( !template ) throw new NotFoundException( "Template no encontrado" );
 
@@ -241,7 +242,7 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
             const templateFile = await this.prisma.templateFile.findUnique( {
                 where  : { id: templateFileId },
                 select : { name: true }
-            } );
+            });
 
             if ( !templateFile ) throw new NotFoundException( "TemplateFile no encontrado" );
 
@@ -256,62 +257,38 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
         const resolvedFrequency = frequency ?? RecurrenceFrequency.ONCE;
         const isOnce            = resolvedFrequency === RecurrenceFrequency.ONCE;
 
-        // 4. Validar fecha para ONCE
-        if ( isOnce && date && new Date( date ) <= new Date() ) {
-            throw new BadRequestException( "La fecha de programación debe ser futura." );
-        }
-
-        // 5. Crear Workflow en DB
-        const workflow = await this.prisma.workflow.create( {
-            data : {
-                name            : name,
-                description     : description,
-                subject         : resolvedSubject,
-                cc              : cc  ?? [],
-                bcc             : bcc ?? [],
-                templateId      : templateId,
-                templateFileId  : templateFileId,
-                students        : students.map( s => ( { email: s.email, name: s.name } ) ),
-                date            : isOnce ? date : null,
-                frequency       : resolvedFrequency,
-                interval        : interval,
-                daysOfWeek      : daysOfWeek    ?? [],
-                dayOfMonth      : dayOfMonth,
-                monthOfYear     : monthOfYear,
-                hour            : hour,
-                minute          : minute,
-                lastDayOfMonth  : lastDayOfMonth ?? false,
-                occurrences     : occurrences,
-                repeatUntil     : repeatUntil,
-                neverEnds       : isOnce ? false : ( neverEnds ?? false ),
-                createdBy       : createdBy,
-            },
-        });
-
-        // 6. Crear SendEmailLog (PENDING) vinculado al Workflow
-        const sendEmailLog = await this.prisma.sendEmailLog.create( {
-            data : {
-                templateId     : templateId,
-                templateFileId : templateFileId,
-                subject        : resolvedSubject,
-                staffId        : createdBy,
-                cc             : cc  ?? [],
-                bcc            : bcc ?? [],
-                content        : templateContent,
-                studentEmails  : students.map( s => s.email ),
-                status         : JobStatus.PENDING,
-                workflowId     : workflow.id,
-            },
-            select : SELECT_EMAIL_LOG_SEND,
-        });
-
-        // 7. Calcular fecha de primera ejecución y programar en Service Bus
+        // 4. Calcular fecha de primera ejecución y validar fecha para ONCE
         let firstRun: Date;
         let cronRule: string | null = null;
 
         if ( isOnce ) {
-            // ONCE: usar la fecha directa, o enviar de inmediato si no hay fecha
-            firstRun = date ? new Date( date ) : new Date();
+            if ( date ) {
+                const parsedDate = new Date( date );
+                firstRun = new Date(
+                    parsedDate.getUTCFullYear(),
+                    parsedDate.getUTCMonth(),
+                    parsedDate.getUTCDate(),
+                    hour,
+                    minute,
+                    0,
+                    0
+                );
+            } else {
+                const now = new Date();
+                firstRun = new Date(
+                    now.getFullYear(),
+                    now.getMonth(),
+                    now.getDate(),
+                    hour,
+                    minute,
+                    0,
+                    0
+                );
+            }
+
+            if ( firstRun <= new Date() ) {
+                throw new BadRequestException( "La fecha de programación debe ser futura." );
+            }
         } else {
             // Recurrente: calcular primera ejecución con cron / lastDayOfMonth
             const recurrenceSettings = {
@@ -326,6 +303,53 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
             cronRule = lastDayOfMonth ? null : transformToCron( recurrenceSettings );
             firstRun = calculateNextRunDate( recurrenceSettings );
         }
+
+        // 5. Crear Workflow en DB
+        const workflow = await this.prisma.workflow.create({
+            data : {
+                name            : name,
+                description     : description,
+                subject         : resolvedSubject,
+                cc              : cc  ?? [],
+                bcc             : bcc ?? [],
+                templateId      : templateId,
+                templateFileId  : templateFileId,
+                students        : students.map( s => ( { email: s.email, name: s.name } ) ),
+                date            : isOnce ? firstRun : null,
+                frequency       : resolvedFrequency,
+                interval        : interval,
+                daysOfWeek      : daysOfWeek    ?? [],
+                dayOfMonth      : dayOfMonth,
+                monthOfYear     : monthOfYear,
+                hour            : hour,
+                minute          : minute,
+                lastDayOfMonth  : lastDayOfMonth ?? false,
+                occurrences     : occurrences,
+                repeatUntil     : repeatUntil,
+                neverEnds       : isOnce ? false : ( neverEnds ?? false ),
+                createdBy       : createdBy,
+                filters
+            },
+            select : SELECT_WORKFLOW
+        });
+
+        // 6. Crear SendEmailLog (PENDING) vinculado al Workflow
+        const sendEmailLog = await this.prisma.sendEmailLog.create( {
+            data : {
+                templateId      : templateId,
+                templateFileId  : templateFileId,
+                subject         : resolvedSubject,
+                staffId         : createdBy,
+                cc              : cc  ?? [],
+                bcc             : bcc ?? [],
+                content         : templateContent,
+                studentEmails   : students.map( s => s.email ),
+                status          : JobStatus.PENDING,
+                workflowId      : workflow.id,
+                filters         : filters ?? []
+            },
+            select : SELECT_EMAIL_LOG_SEND,
+        });
 
         await this.recurrenceSender.scheduleMessages([{
             body: {
@@ -342,7 +366,7 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
             message     : isOnce
                 ? "Envío único programado exitosamente"
                 : "Workflow recurrente creado exitosamente",
-            workflow    : { id: workflow.id, name: workflow.name },
+            workflow,
             sendEmailLog,
             scheduledFor: firstRun.toISOString(),
             count       : students.length,
