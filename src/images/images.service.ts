@@ -22,10 +22,7 @@ export class ImagesService {
 	async create( name : string, file : Express.Multer.File ) {
 		try {
 			const baseUrl   = await this.fileManagerService.upload( file );
-            // TODO: Hay que probar las imágenes
             const url       = getLastItem( baseUrl );
-            // const url       = baseUrl.split( ENVS.FILE_MANAGER.FOLDER.BASE.replaceAll( '|', '/' ) ).pop()?.slice( 1 )!;
-            // const url       = baseUrl.split( '/' ).at( -1 ) as string;
 
 			return await this.prisma.image.create({
 				data : {
