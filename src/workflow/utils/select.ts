@@ -16,6 +16,7 @@ export const SELECT_WORKFLOW = {
     repeatUntil     : true,
     neverEnds       : true,
     templateFileId  : true,
+    date            : true,
     filters         : true,
     template        : {
         select: {
