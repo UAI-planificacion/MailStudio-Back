@@ -30,7 +30,7 @@ const GLOBAL_BUTTON = ( externalUrl : string ) => `
 
 const extractVariables = ( html : string ) : Record<string, string> => {
 	const variables : Record<string, string> = {};
-	const doubleCurlyRegex   = /\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g;
+	const doubleCurlyRegex   = /\{\{\s*([a-zA-Z0-9_.:\s\[\]\-,]+)\s*\}\}/g;
 	const doubleBracketRegex = /\[\[\s*([a-zA-Z0-9_.-]+)\s*\]\]/g;
 	let match;
 
