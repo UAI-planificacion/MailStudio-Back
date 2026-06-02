@@ -30,18 +30,20 @@ const GLOBAL_BUTTON = ( externalUrl : string ) => `
 
 const extractVariables = ( html : string ) : Record<string, string> => {
 	const variables : Record<string, string> = {};
-	const doubleCurlyRegex   = /\{\{\s*([a-zA-Z0-9_.:\s\[\]\-,]+)\s*\}\}/g;
+	const doubleCurlyRegex   = /\{\{\s*([a-zA-Z0-9_.:\s\[\]\-\,\/]+)\s*\}\}/g;
 	const doubleBracketRegex = /\[\[\s*([a-zA-Z0-9_.-]+)\s*\]\]/g;
 	let match;
 
-	while ( ( match = doubleCurlyRegex.exec( html ) ) !== null ) {
+	while (( match = doubleCurlyRegex.exec( html )) !== null ) {
 		const key = match[ 1 ].trim();
-		variables[ key ] = `{{${ key }}}`;
+
+        variables[ key ] = `{{${ key }}}`;
 	}
 
-	while ( ( match = doubleBracketRegex.exec( html ) ) !== null ) {
+	while (( match = doubleBracketRegex.exec( html )) !== null ) {
 		const key = match[ 1 ].trim();
-		variables[ key ] = `[[${ key }]]`;
+
+        variables[ key ] = `[[${ key }]]`;
 	}
 
 	return variables;
@@ -168,7 +170,6 @@ async function getContent( url: string ) : Promise<string> {
 		const response = await fetch( url );
 		return await response.text();
 	} catch ( error ) {
-		return `<p>Error al cargar el contenido.</p>`;
+		return '';
 	}
 }
-
