@@ -263,19 +263,10 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
 
         if ( isOnce ) {
             if ( date ) {
-                const parsedDate = new Date( date );
-                firstRun = new Date(
-                    parsedDate.getUTCFullYear(),
-                    parsedDate.getUTCMonth(),
-                    parsedDate.getUTCDate(),
-                    hour,
-                    minute,
-                    0,
-                    0
-                );
+                firstRun = new Date( date );
             } else {
                 const now = new Date();
-                firstRun = new Date(
+                firstRun  = new Date(
                     now.getFullYear(),
                     now.getMonth(),
                     now.getDate(),
@@ -301,7 +292,7 @@ export class SendEmailsService implements OnModuleInit, OnModuleDestroy {
             };
 
             cronRule = lastDayOfMonth ? null : transformToCron( recurrenceSettings );
-            firstRun = calculateNextRunDate( recurrenceSettings );
+            firstRun = calculateNextRunDate( recurrenceSettings, date );
         }
 
         // 5. Crear Workflow en DB
