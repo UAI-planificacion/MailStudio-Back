@@ -1,5 +1,5 @@
 import { RecurrenceFrequency } from '@prisma/client';
-import * as cronParser         from 'cron-parser';
+import { CronExpressionParser } from 'cron-parser';
 
 
 export type FRECUENCY = RecurrenceFrequency;
@@ -42,7 +42,6 @@ export function transformToCron( settings: RecurrenceSettings ): string {
     }
 }
 
-
 /**
  * Calcula la fecha del último día de un mes dado.
  */
@@ -50,19 +49,18 @@ function getLastDayOfMonth( year: number, month: number ): number {
     return new Date( year, month + 1, 0 ).getDate();
 }
 
-
 /**
  * Calcula la próxima fecha de ejecución.
  * Si `lastDayOfMonth` es true, calcula manualmente el último día del mes siguiente.
  * En caso contrario, usa cron-parser.
  */
-export function calculateNextRunDate( settings: RecurrenceSettings ): Date {
+export function calculateNextRunDate( settings: RecurrenceSettings, startDate?: Date | null ): Date {
     const { lastDayOfMonth, hour, minute } = settings;
 
     if ( lastDayOfMonth ) {
-        const now       = new Date();
-        let targetYear  = now.getFullYear();
-        let targetMonth = now.getMonth() + 1; // Próximo mes
+        const referenceDate = startDate ?? new Date();
+        let targetYear      = referenceDate.getFullYear();
+        let targetMonth     = referenceDate.getMonth();
 
         if ( targetMonth > 11 ) {
             targetMonth = 0;
@@ -73,13 +71,16 @@ export function calculateNextRunDate( settings: RecurrenceSettings ): Date {
         const nextRun = new Date( targetYear, targetMonth, lastDay, hour, minute, 0, 0 );
 
         // Si la fecha calculada ya pasó, avanzar un mes más
-        if ( nextRun <= now ) {
+        if ( nextRun <= referenceDate ) {
             targetMonth++;
+
             if ( targetMonth > 11 ) {
                 targetMonth = 0;
                 targetYear++;
             }
+
             const nextLastDay = getLastDayOfMonth( targetYear, targetMonth );
+
             return new Date( targetYear, targetMonth, nextLastDay, hour, minute, 0, 0 );
         }
 
@@ -87,6 +88,16 @@ export function calculateNextRunDate( settings: RecurrenceSettings ): Date {
     }
 
     const cronRule = transformToCron( settings );
-    const interval = ( cronParser as any ).parseExpression( cronRule );
+
+    let referenceDate = new Date();
+    if ( startDate ) {
+        referenceDate = new Date( startDate );
+        referenceDate.setHours( hour, minute, 0, 0 );
+        referenceDate.setSeconds( referenceDate.getSeconds() - 5 );
+    }
+
+    const options  = { currentDate: referenceDate };
+    const interval = CronExpressionParser.parse( cronRule, options );
+
     return interval.next().toDate();
-}
+}
